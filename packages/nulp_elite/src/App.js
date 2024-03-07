@@ -41,9 +41,6 @@ function App() {
       moduleName: "nulp_elite",
       path: "/User",
       component: User,
-
-      path: "/registration",
-      component: Registration,
     },
   ];
   // const LoginComponent = React.lazy(() => import("core/Login"));

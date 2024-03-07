@@ -14,6 +14,13 @@ export async function post(url: string, body: any, headers: any = {}) {
   })
 }
 
+export async function patch(url: string, body: any, headers: any = {}) {
+  return await axios.patch(url, body, {
+    headers,
+    withCredentials: true
+  })
+}
+
 export async function update(url: string, body: any, headers: any = {}) {
   return await axios.put(url, body, {
     headers,
