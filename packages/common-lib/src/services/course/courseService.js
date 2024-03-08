@@ -33,3 +33,31 @@ export const update = async (data = {}, headers = {}) => {
     return {}
   }
 }
+
+export const getCourseSection = async (url, headers = {}) => {
+  const result = await get(url, { headers })
+  if (result) {
+    return result
+  } else {
+    return {}
+  }
+}
+
+export const getQRCodeFile = async (url, data = {}, headers = {}) => {
+  const result = await post(url, { data }, { headers })
+  if (result) {
+    return result
+  } else {
+    return {}
+  }
+}
+
+export const getEnrolledCourses = async (url, headers = {}) => {
+  const result = await get(url, { headers })
+  if (result) {
+    return result
+  } else {
+    return {}
+  }
+}
+
