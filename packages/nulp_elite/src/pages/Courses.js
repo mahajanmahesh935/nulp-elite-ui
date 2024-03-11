@@ -2,8 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Heading, Text, Button } from "@chakra-ui/react";
 import URLSConfig from "../configs/urlConfig.json";
 import APPConfig from "../configs/appConfig.json";
-import { courseService, userService } from "@shiksha/common-lib";
-import { logDOM } from "@testing-library/react";
+import { courseService } from "@shiksha/common-lib";
 import * as _ from "lodash-es";
 
 const User = () => {
@@ -41,6 +40,7 @@ const User = () => {
     if (sectionId) {
       return of(sectionId);
     }
+
     return getCourseSection().pipe(
       map((sectionId) => {
         setSectionId(sectionId);
@@ -173,4 +173,3 @@ const User = () => {
 };
 
 export default User;
-
