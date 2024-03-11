@@ -9,7 +9,6 @@ export const getAllCourses = async (url, filters = {}, header = {}) => {
     return []
   }
 }
-// Get  one content
 
 export const getOne = async (url, header = {}) => {
   const result = await get(url, {
@@ -60,4 +59,3 @@ export const getEnrolledCourses = async (url, headers = {}) => {
     return {}
   }
 }
-
