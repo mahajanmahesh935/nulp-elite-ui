@@ -1,61 +1,61 @@
-import { post, get, update as coreUpdate } from '../RestClient'
+import { post, get, update as coreUpdate } from "@shiksha/common-lib";
 
 //  Get all content
 export const getAllCourses = async (url, filters = {}, header = {}) => {
-  const result = await post(url, filters, header)
+  const result = await post(url, filters, header);
   if (result) {
-    return result
+    return result;
   } else {
-    return []
+    return [];
   }
-}
+};
 
 export const getOne = async (url, header = {}) => {
   const result = await get(url, {
-    header
-  })
+    header,
+  });
   if (result) {
-    return result
+    return result;
   } else {
-    return []
+    return [];
   }
-}
+};
 
 // Update content
 export const update = async (data = {}, headers = {}) => {
   const result = await coreUpdate(url, data, {
-    headers
-  })
+    headers,
+  });
   if (result) {
-    return result
+    return result;
   } else {
-    return {}
+    return {};
   }
-}
+};
 
 export const getCourseSection = async (url, headers = {}) => {
-  const result = await get(url, { headers })
+  const result = await get(url, { headers });
   if (result) {
-    return result
+    return result;
   } else {
-    return {}
+    return {};
   }
-}
+};
 
 export const getQRCodeFile = async (url, data = {}, headers = {}) => {
-  const result = await post(url, { data }, { headers })
+  const result = await post(url, { data }, { headers });
   if (result) {
-    return result
+    return result;
   } else {
-    return {}
+    return {};
   }
-}
+};
 
 export const getEnrolledCourses = async (url, headers = {}) => {
-  const result = await get(url, { headers })
+  const result = await get(url, { headers });
   if (result) {
-    return result
+    return result;
   } else {
-    return {}
+    return {};
   }
-}
+};

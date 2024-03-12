@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Heading, Text, Button } from "@chakra-ui/react";
 import URLSConfig from "../configs/urlConfig.json";
 import APPConfig from "../configs/appConfig.json";
-import { courseService } from "@shiksha/common-lib";
+import { courseService } from "../services/courseService";
 import * as _ from "lodash-es";
 
 const User = () => {
