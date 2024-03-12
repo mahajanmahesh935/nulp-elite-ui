@@ -1,3 +1,5 @@
+//This is for  Tesing perpose
+
 import React, { useState, useEffect } from "react";
 import { Box, Heading, Text, Button } from "@chakra-ui/react";
 import URLSConfig from "../configs/urlConfig.json";
@@ -9,31 +11,6 @@ const User = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [organisationIds, setOrganisationIds] = useState("");
-  //const createManagedUser = new EventEmitter();
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       setIsLoading(true);
-  //       await endSession();
-  //       await getUserData();
-  //       await updateUserData();
-  //       await getOrganizationDetails();
-  //       await registerUser();
-  //       await getAnonymousUserPreference();
-  //       await getIsUserExistsUserByKey();
-  //       await getGuestUser();
-  //       await getUserByKey();
-  //       await getFeedData();
-  //       await userMigrate();
-  //     } catch (error) {
-  //       setError(error.message);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, []);
 
   useEffect(() => {
     endSession();
