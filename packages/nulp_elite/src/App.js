@@ -55,9 +55,6 @@ function App() {
   },
   {
     moduleName: "nulp_elite",
-    path: "/user",
-    component: User,
-
     path: "/registration",
     component: Registration,
   },
@@ -65,6 +62,11 @@ function App() {
     moduleName: "nulp_elite",
     path: "/userPrefData",
     component: UserPrefData,
+  },
+  {
+    moduleName: "nulp_elite",
+    path: "/user",
+    component: User,
   },
   ];
 
