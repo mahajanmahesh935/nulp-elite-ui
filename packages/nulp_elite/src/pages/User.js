@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Box, Heading, Text, Button } from "@chakra-ui/react";
 import URLSConfig from "../configs/urlConfig.json";
-import { userService } from "../Services/userService";
+import { userService } from "../services/userService";
 
 const User = () => {
   const [data, setData] = useState({});
