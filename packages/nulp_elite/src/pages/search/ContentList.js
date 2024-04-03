@@ -1,5 +1,3 @@
-// Profile.js
-
 import React, { useState, useEffect } from "react";
 import URLSConfig from "../../configs/urlConfig.json";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
@@ -25,6 +23,7 @@ const ContentList = (props) => {
   const [filters, setFilters] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [gradeLevels, setGradeLevels] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
   const { domain } = location.state || {};
@@ -32,6 +31,7 @@ const ContentList = (props) => {
   // Example of API Call
   useEffect(() => {
     fetchData();
+    fetchGradeLevels(); // Fetch grade levels when component mounts
   }, [filters]);
 
   const handleFilterChange = (selectedOptions) => {
@@ -93,6 +93,33 @@ const ContentList = (props) => {
     }
   };
 
+  const fetchGradeLevels = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/framework/v1/read/nulp?categories=gradeLevel"
+      );
+      const data = await response.json();
+      if (
+        data.result &&
+        data.result.framework &&
+        data.result.framework.categories
+      ) {
+        const gradeLevelCategory = data.result.framework.categories.find(
+          (category) => category.identifier === "nulp_gradelevel"
+        );
+        if (gradeLevelCategory && gradeLevelCategory.terms) {
+          const gradeLevelsOptions = gradeLevelCategory.terms.map((term) => ({
+            value: term.code,
+            label: term.name,
+          }));
+          setGradeLevels(gradeLevelsOptions);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching grade levels:", error);
+    }
+  };
+
   return (
     <div>
       <Header />
@@ -126,15 +153,8 @@ const ContentList = (props) => {
       <Container maxWidth="xxl" role="main" className="container-pb">
         <Box style={{ margin: "20px 0" }}>
           <Filter
-            options={[
-              { value: "mission", label: "Mission" },
-              { value: "program", label: "Program" },
-              { value: "solution", label: "Solution" },
-              { value: "knowledge", label: "Knowledge" },
-              { value: "process", label: "Process" },
-              { value: "software", label: "Software" },
-            ]}
-            label="Filter by Designation"
+            options={gradeLevels}
+            label="Filter by Grade Level"
             onChange={handleFilterChange}
           />
         </Box>
