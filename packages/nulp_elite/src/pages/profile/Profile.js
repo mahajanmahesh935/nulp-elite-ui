@@ -28,7 +28,7 @@ const Profile = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const _userId = util.UserID();
+        const _userId = util.userId();
         const url = `http://localhost:3000/learner/user/v5/read/${_userId}?fields=organisations,roles,locations,declarations,externalIds`;
         const header = "application/json";
         const response = await fetch(url, {
