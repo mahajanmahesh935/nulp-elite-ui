@@ -101,9 +101,9 @@ const ContinueLearning = () => {
             {t("Continue Learning")}
           </Typography>
         </Breadcrumbs>
-        <Box style={{ margin: "20px 0" }}>
+        {/* <Box style={{ margin: "20px 0" }}>
           <Search></Search>
-        </Box>
+        </Box> */}
 
         <Box textAlign="center" padding="10">
           <Box sx={{ paddingTop: "30px" }}>
