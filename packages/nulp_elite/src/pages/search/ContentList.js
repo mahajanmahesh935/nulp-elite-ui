@@ -29,13 +29,14 @@ const ContentList = (props) => {
   const [totalPages, setTotalPages] = useState(1);
   const [data, setData] = useState([]);
   const [filters, setFilters] = useState({});
-  const [query, setQuery] = useState({});
+  const [query, setQuery] = useState(location.state || {});
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [gradeLevels, setGradeLevels] = useState([]);
   const navigate = useNavigate();
   const { domain } = location.state || {};
+  // const { query } = location.state || {};
   const [page, setPage] = React.useState(1);
   console.log("pageNumber----", pageNumber);
   // console.log("page----",page)
