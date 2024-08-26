@@ -107,6 +107,7 @@ const JoinCourse = () => {
   const [NotConsumedContent, setNotConsumedContent] = useState();
   const [isContentConsumed, setIsContentConsumed] = useState();
   const [completedContents, setCompletedContents] = useState([]);
+  const [hideLeaveCourseButton , setHideLeaveCourseButton]=useState(false)
 
   const toggleShowMore = () => {
     setShowMore((prevShowMore) => !prevShowMore);
@@ -169,8 +170,8 @@ const JoinCourse = () => {
 
           const getAllLeafIdentifiers = (nodes) => {
              nodes.forEach((node) => {
-              if (!node.children || node.children.length === 0) {
-                 if (node.identifier) {
+              if (!node?.children || node?.children.length === 0) {
+                 if (node?.identifier) {
                    allContents.push(node.identifier);
                  }
                } else {
@@ -455,6 +456,7 @@ const JoinCourse = () => {
           }
 
           if (allFound) {
+            setHideLeaveCourseButton(true);
             notConsumedContent = allContents[0];
             try {
               const url = `${urlConfig.URLS.CONTENT_PREFIX}${urlConfig.URLS.COURSE.USER_CONTENT_STATE_UPDATE}`;
@@ -594,6 +596,7 @@ const JoinCourse = () => {
             <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
+              disabled={hideLeaveCourseButton}
             >
               {t("LEAVE_COURSE")}
             </Button>
@@ -642,6 +645,7 @@ const JoinCourse = () => {
             <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
+              disabled={hideLeaveCourseButton}
             >
               {t("LEAVE_COURSE")}
             </Button>
