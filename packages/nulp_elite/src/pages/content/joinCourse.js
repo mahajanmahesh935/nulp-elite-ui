@@ -161,25 +161,30 @@ const JoinCourse = () => {
         setCourseData(data);
         setUserData(data);
 
-        const identifiers =
-          data?.result?.content?.children[0]?.children[0]?.identifier;
-        setChildNode(identifiers);
+       const identifiers = data?.result?.content?.children[0]?.children[0]?.identifier;
+          console.log(identifiers, "setChildNode");
+          setChildNode(identifiers);
 
-        let allContents = [];
+          let allContents = [];
 
-        if (data?.result?.content?.children) {
-          data.result.content.children.forEach((parent) => {
-            if (parent.children) {
-              parent.children.forEach((child) => {
-                if (child.identifier) {
-                  allContents.push(child.identifier);
-                }
+          const getAllLeafIdentifiers = (nodes) => {
+             nodes.forEach((node) => {
+              if (!node.children || node.children.length === 0) {
+                 if (node.identifier) {
+                   allContents.push(node.identifier);
+                 }
+               } else {
+                   getAllLeafIdentifiers(node.children);
+                  }
               });
+            };
+
+            if (data?.result?.content?.children) {
+             getAllLeafIdentifiers(data.result.content.children);
             }
-          });
-        }
-        setAllContents(allContents);
-        console.log("allContents-------", allContents);
+
+          setAllContents(allContents);
+
       } catch (error) {
         console.error("Error fetching course data:", error);
         showErrorMessage(t("FAILED_TO_FETCH_DATA"));
