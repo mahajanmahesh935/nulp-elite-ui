@@ -64,6 +64,7 @@ const JoinCourse = () => {
   const [batchDetails, setBatchDetails] = useState();
   const [userCourseData, setUserCourseData] = useState({});
   const [showEnrollmentSnackbar, setShowEnrollmentSnackbar] = useState(false);
+  const [showUnEnrollmentSnackbar, setShowUnEnrollmentSnackbar] = useState(false);
   const [showConsentForm, setShowConsentForm] = useState(false);
   const [enrolled, setEnrolled] = useState(false);
   const [progress, setCourseProgress] = useState();
@@ -87,9 +88,12 @@ const JoinCourse = () => {
   const [showChat, setShowChat] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 767);
   const queryString = location.search;
-  const contentId = queryString.startsWith("?do_")
-    ? queryString.slice(1)
-    : null;
+  let contentId = queryString.startsWith("?do_") ? queryString.slice(1) : null;
+  // Check if contentId ends with '=' and remove it
+  if (contentId && contentId.endsWith("=")) {
+    contentId = contentId.slice(0, -1);
+  }
+
   // const { contentId } = location.state || {};
   // const { contentId } = useParams();
   const _userId = util.userId(); // Assuming util.userId() is defined
@@ -107,7 +111,7 @@ const JoinCourse = () => {
   const [NotConsumedContent, setNotConsumedContent] = useState();
   const [isContentConsumed, setIsContentConsumed] = useState();
   const [completedContents, setCompletedContents] = useState([]);
-
+  const [isCompleted, setIsCompleted] = useState();
   const toggleShowMore = () => {
     setShowMore((prevShowMore) => !prevShowMore);
   };
@@ -185,6 +189,9 @@ const JoinCourse = () => {
 
           setAllContents(allContents);
 
+          });
+        }
+
       } catch (error) {
         console.error("Error fetching course data:", error);
         showErrorMessage(t("FAILED_TO_FETCH_DATA"));
@@ -226,6 +233,7 @@ const JoinCourse = () => {
               batchId: batchDetails.batchId,
             });
             setBatchDetails(batchDetails);
+            console.log("batchDetail---",batchDetails)
           } else {
             console.error("Batch data not found in response");
           }
@@ -283,6 +291,20 @@ const JoinCourse = () => {
     getUserData();
   }, []);
 
+  const checkCourseComplition = async(allContents, userProgress) =>{
+    // const contentlength = allContents.length
+    let completedCount= 0;
+    userProgress.result.contentList.map((content)=>{
+      if(content.status ){
+        completedCount = completedCount + 1 ;
+      }
+    })
+    if(allContents.length == completedCount){
+      setIsCompleted(true)
+    }
+   
+  }
+
   const flattenDeep = async (contents) => {
     if (contents) {
       let result = [];
@@ -308,6 +330,7 @@ const JoinCourse = () => {
       "courseData?.result?.content?.children",
       courseData?.result?.content?.children
     );
+    let contentStatus = [];
     if (batchDetails?.batchId && courseData?.result?.content?.children) {
       let tempConsumedContents = 0;
       let tempTotalContents = 0;
@@ -323,10 +346,10 @@ const JoinCourse = () => {
                 item.mimeType !== "application/vnd.ekstep.content-collection"
             );
             console.log("flattenDeepContents", flattenDeepContents);
-            consumedContents = flattenDeepContents.filter((o) =>
-              contentStatus.some(
+            consumedContents = flattenDeepContents?.filter((o) =>
+              contentStatus?.some(
                 ({ contentId, status }) =>
-                  o.identifier === contentId && status === 2
+                  o?.identifier === contentId && status === 2
               )
             );
           }
@@ -361,15 +384,16 @@ const JoinCourse = () => {
       console.log("progress", progress);
       setConsumedContents(tempConsumedContents);
       setTotalContents(tempTotalContents);
+      let courseHierarchy = {};
       courseHierarchy.progress = progress;
       const unitCompleted = tempTotalContents === tempConsumedContents;
       setIsUnitCompleted(unitCompleted);
     }
   };
 
-  useEffect(() => {
-    calculateProgress();
-  }, [batchDetails, courseData]);
+  // useEffect(() => {
+  //   calculateProgress();
+  // }, [batchDetails, courseData]);
 
   useEffect(() => {
     const fetchChats = async () => {
@@ -407,6 +431,7 @@ const JoinCourse = () => {
           console.log("API Response Data:", data);
 
           setCourseProgress(data);
+          checkCourseComplition(allContents, data);
 
           const contentIds =
             data?.result?.contentList?.map((item) => item.contentId) || [];
@@ -443,30 +468,43 @@ const JoinCourse = () => {
           let allFound = true;
           let notConsumedContent;
 
-          for (let identifier of allContents) {
-            const found = contentList.find(
-              (item) => item.contentId === identifier && item.status === 2
-            );
-            if (!found) {
-              notConsumedContent = identifier;
-              allFound = false;
-              break;
+          if (Array.isArray(allContents)) {
+            for (let identifier of allContents) {
+              const found = Array.isArray(contentList)
+                ? contentList.find(
+                    (item) => item.contentId === identifier && item.status === 2
+                  )
+                : undefined;
+
+              if (!found) {
+                notConsumedContent = identifier;
+                allFound = false;
+                break;
+              }
             }
+          } else {
+            console.error("Error: allContents is not an array or is undefined");
           }
 
           if (allFound) {
-            notConsumedContent = allContents[0];
-            try {
-              const url = `${urlConfig.URLS.CONTENT_PREFIX}${urlConfig.URLS.COURSE.USER_CONTENT_STATE_UPDATE}`;
-              const response = await axios.patch(url, {
-                request: {
-                  userId: _userId,
-                  courseId: contentId,
-                  batchId: batchDetails?.batchId,
-                },
-              });
-            } catch (error) {
-              console.error("Error while fetching courses:", error);
+            if (Array.isArray(allContents) && allContents?.length > 0) {
+              notConsumedContent = allContents[0];
+              try {
+                const url = `${urlConfig.URLS.CONTENT_PREFIX}${urlConfig.URLS.COURSE.USER_CONTENT_STATE_UPDATE}`;
+                const response = await axios.patch(url, {
+                  request: {
+                    userId: _userId,
+                    courseId: contentId,
+                    batchId: batchDetails?.batchId,
+                  },
+                });
+              } catch (error) {
+                console.error("Error while fetching courses:", error);
+              }
+            } else {
+              console.error(
+                "Error: allContents is either not an array or it is empty."
+              );
             }
           }
 
@@ -506,23 +544,23 @@ const JoinCourse = () => {
     });
   };
 
-
- const handleLinkClick = (id) => {
-  if (isEnroll) {
-    navigate(`${routeConfig.ROUTES.PLAYER_PAGE.PLAYER}?${id}`, {
-      state: {
-        coursename: userData?.result?.content?.name,
-        batchid: batchDetails?.batchId,
-        courseid: contentId,
-        isenroll: isEnroll,
-        consumedcontents: ConsumedContents,
-      },
-    });
-  } else {
-    showErrorMessage("You must join the course to get complete access to content.");
-  }
-};
-
+  const handleLinkClick = (id) => {
+    if (isEnroll) {
+      navigate(`${routeConfig.ROUTES.PLAYER_PAGE.PLAYER}?${id}`, {
+        state: {
+          coursename: userData?.result?.content?.name,
+          batchid: batchDetails?.batchId,
+          courseid: contentId,
+          isenroll: isEnroll,
+          consumedcontents: ConsumedContents,
+        },
+      });
+    } else {
+      showErrorMessage(
+        "You must join the course to get complete access to content."
+      );
+    }
+  };
 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -532,15 +570,15 @@ const JoinCourse = () => {
   };
 
   const isEnrolled = () => {
-    console.log("userCourseData?.courses", userCourseData?.courses);
-    console.log(
-      "userCourseData?.courses",
-      userCourseData?.courses?.map((course) => course.contentId)
-    );
-    console.log(
-      "userCourseData?.courses?.some",
-      userCourseData?.courses?.some((course) => course.contentId === contentId)
-    );
+    // console.log("userCourseData?.courses", userCourseData?.courses);
+    // console.log(
+    //   "userCourseData?.courses",
+    //   userCourseData?.courses?.map((course) => course.contentId)
+    // );
+    // console.log(
+    //   "userCourseData?.courses?.some",
+    //   userCourseData?.courses?.some((course) => course.contentId === contentId)
+    // );
     return (
       userCourseData &&
       userCourseData.courses &&
@@ -569,7 +607,7 @@ const JoinCourse = () => {
       const response = await axios.post(url, requestBody);
       if (response.status === 200) {
         setEnrolled(true);
-        setShowEnrollmentSnackbar(true);
+        setShowUnEnrollmentSnackbar(true);
       }
     } catch (error) {
       console.error("Error enrolling in the course:", error);
@@ -579,8 +617,8 @@ const JoinCourse = () => {
   };
 
   const renderActionButton = () => {
-    console.log("ConsumedContents", ConsumedContents);
-    console.log("allContents", allContents);
+    // console.log("ConsumedContents", ConsumedContents);
+    // console.log("allContents", allContents);
     if (isEnrolled() || enrolled) {
       if (isNotStarted) {
         return (
@@ -591,12 +629,14 @@ const JoinCourse = () => {
             >
               {t("START_LEARNING")}
             </Button>
-            <Button
+          {!isCompleted &&
+              <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
-            >
-              {t("LEAVE_COURSE")}
+            > {t("LEAVE_COURSE")}
             </Button>
+          }  
+             
             {showConfirmation && (
               <Dialog open={showConfirmation} onClose={handleConfirmationClose}>
                 <DialogTitle>
@@ -614,13 +654,14 @@ const JoinCourse = () => {
                   >
                     {t("CANCEL")}
                   </Button>
-                  <Button
-                    onClick={handleLeaveConfirmed}
-                    className="custom-btn-primary"
-                    autoFocus
-                  >
-                    {t("LEAVE_COURSE")}
-                  </Button>
+                  {!isCompleted &&
+              <Button
+              onClick={handleLeaveCourseClick} // Open confirmation dialog
+              className="custom-btn-danger"
+            > {t("LEAVE_COURSE")}
+            </Button>
+          }  
+            
                 </DialogActions>
               </Dialog>
             )}
@@ -639,12 +680,14 @@ const JoinCourse = () => {
             >
               {t("CONTINUE LEARNING")}
             </Button>
-            <Button
+            {!isCompleted &&
+              <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
-            >
-              {t("LEAVE_COURSE")}
+            > {t("LEAVE_COURSE")}
             </Button>
+          }  
+            
             {showConfirmation && (
               <Dialog open={showConfirmation} onClose={handleConfirmationClose}>
                 <DialogTitle>
@@ -662,13 +705,14 @@ const JoinCourse = () => {
                   >
                     {t("CANCEL")}
                   </Button>
-                  <Button
-                    onClick={handleLeaveConfirmed}
-                    className="custom-btn-primary"
-                    autoFocus
-                  >
-                    {t("LEAVE_COURSE")}
-                  </Button>
+                  {!isCompleted &&
+              <Button
+              onClick={handleLeaveCourseClick} // Open confirmation dialog
+              className="custom-btn-danger"
+            > {t("LEAVE_COURSE")}
+            </Button>
+          }  
+            
                 </DialogActions>
               </Dialog>
             )}
@@ -753,7 +797,7 @@ const JoinCourse = () => {
     try {
       await handleJoinCourse(); // Wait for the user to join the course
       setShowConsentForm(true); // Open the consent form after joining the course
-    } catch (error) {
+    } catch (error) {setShowEnrollmentSnackbar
       console.error("Error:", error);
     }
   };
@@ -930,6 +974,22 @@ const JoinCourse = () => {
           {t("ENROLLMENT_SUCCESS_MESSAGE")}
         </MuiAlert>
       </Snackbar>
+      <Snackbar
+        open={showUnEnrollmentSnackbar}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <MuiAlert
+          elevation={6}
+          variant="filled"
+          onClose={handleSnackbarClose}
+          severity="success"
+          sx={{ mt: 2 }}
+        >
+          {t("UNENROLLMENT_SUCCESS_MESSAGE")}
+        </MuiAlert>
+      </Snackbar>
 
       <Modal
         aria-labelledby="modal-modal-title"
@@ -1073,6 +1133,14 @@ const JoinCourse = () => {
                   {userData?.result?.content?.name}
                 </Link>
               </Breadcrumbs>
+                {/* <Box
+            className="d-flex jc-bw mr-20 my-20 px-10"
+            style={{ alignItems: "center" }}
+          >
+            <Link onClick={handleGoBack} className="viewAll mr-17">
+              {t("BACK")}
+            </Link>
+          </Box> */}
 
               {/* <Grid item xs={4}>
                 <Link
@@ -1168,6 +1236,8 @@ const JoinCourse = () => {
                   )}
               </Box>
             )}
+
+
 
             <Box className="lg-hide"> {renderActionButton()}</Box>
             <Box
@@ -1326,6 +1396,31 @@ const JoinCourse = () => {
                 </Typography>
               </AccordionDetails>
             </Accordion>
+           {/* {isEnrolled && batchDetails == 'undefined' && */}
+
+<Box
+style={{
+  background: "#F9FAFC",
+  padding: "10px",
+  borderRadius: "10px",
+  color: "#484848",
+}}
+className="accordionBoxShadow"
+>
+<Typography
+  variant="h7"
+  style={{
+    margin: "0 0 9px 0",
+    display: "block",
+    fontSize: "16px",
+  }}
+>
+  {t("CERT_NOT_ATTACHED")}:
+</Typography>
+
+</Box>
+            {/* } */}
+          
             <div className="xs-hide">
               <React.Fragment>
                 {chat.length === 0 && (
@@ -1491,6 +1586,15 @@ const JoinCourse = () => {
                       {faqIndex.name}
                     </AccordionSummary>
                     {faqIndex?.children?.map((faqIndexname) => (
+                       <Link
+                       href="#"
+                       underline="none"
+                       style={{ verticalAlign: "super" }}
+                       onClick={() =>
+                         handleLinkClick(faqIndexname.identifier)
+                       }
+                       className="h6-title"
+                     >
                       <AccordionDetails
                         key={faqIndexname.identifier || faqIndexname.name}
                         className="border-bottom"
@@ -1505,29 +1609,21 @@ const JoinCourse = () => {
                             {faqIndexname.name}
                           </span>
                         ) : (
-                          <Link
-                            href="#"
-                            underline="none"
-                            style={{ verticalAlign: "super" }}
-                            onClick={() =>
-                              handleLinkClick(faqIndexname.identifier)
-                            }
-                            className="h6-title"
-                          >
-                            {faqIndexname.name}
-                            {completedContents.includes(
-                              faqIndexname.identifier
-                            ) && (
-                              <CheckCircleIcon
-                                style={{
-                                  color: "green",
-                                  fontSize: "24px",
-                                  paddingLeft: "10px",
-                                  float: "right",
-                                }}
-                              />
-                            )}
-                          </Link>
+                         <Box> {faqIndexname.name}
+                         {completedContents.includes(
+                           faqIndexname.identifier
+                         ) && (
+                           <CheckCircleIcon
+                             style={{
+                               color: "green",
+                               fontSize: "24px",
+                               paddingLeft: "10px",
+                               float: "right",
+                             }}
+                           />
+                         )}</Box>
+                           
+                          
                         )}
                         {faqIndexname.children &&
                           faqIndexname.children.length > 0 && (
@@ -1631,6 +1727,7 @@ const JoinCourse = () => {
                             </div>
                           )}
                       </AccordionDetails>
+                      </Link>
                     ))}
                   </Accordion>
                 ))}

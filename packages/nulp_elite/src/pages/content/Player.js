@@ -61,10 +61,11 @@ const [assessEvents, setAssessEvents] =useState ([]);
 const [propLength, setPropLength] =useState();
   const _userId = util.userId();
   const queryString = location.search;
-  const contentId = queryString.startsWith("?do_")
-    ? queryString.slice(1)
-    : null;
-
+  let contentId = queryString.startsWith("?do_") ? queryString.slice(1) : null;
+  // Check if contentId ends with '=' and remove it
+  if (contentId && contentId.endsWith("=")) {
+    contentId = contentId.slice(0, -1);
+  }
   const fetchUserData = useCallback(async () => {
     try {
       const userData = await util.userData();
@@ -266,29 +267,14 @@ const attemptid = ()=>{
       <Container maxWidth="xl" role="main" className="player mt-15">
         <Grid container spacing={2} className="mt-10 mb-30">
           <Grid item xs={12} md={12} lg={12}>
-            <Breadcrumbs
-              aria-label="breadcrumb"
-              className="h6-title mt-15 pl-28 xss-pb-0"
-              style={{ padding: "0 0 10px 0px" }}
-            >
-              <Link
-                underline="hover"
-                style={{ maxHeight: "inherit", cursor: "pointer" }}
-                onClick={handleBackNavigation}
-                color="#004367"
-              >
-                {t("ALL_PLAYER")}
-              </Link>
-              <Link
-                underline="hover"
-                href=""
-                aria-current="page"
-                className="h6-title oneLineEllipsis"
-               
-              >
-                {lesson?.name}
-              </Link>
-            </Breadcrumbs>
+          <Box
+            className="d-flex jc-bw mr-20 my-20 px-10"
+            style={{ alignItems: "center" }}
+          >
+            <Link onClick={handleBackNavigation} className="viewAll mr-17">
+              {t("BACK")}
+            </Link>
+          </Box>
           </Grid>
           <Grid item xs={12} md={9} lg={9}>
             <Box>
@@ -479,7 +465,7 @@ const attemptid = ()=>{
             </AccordionSummary>
             <AccordionDetails>
               <Typography>
-                {lesson?.name}
+                {lesson?.description}
               </Typography>
             </AccordionDetails>
           </Accordion>
