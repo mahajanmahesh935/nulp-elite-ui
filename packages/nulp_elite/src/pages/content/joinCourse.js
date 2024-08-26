@@ -107,7 +107,6 @@ const JoinCourse = () => {
   const [NotConsumedContent, setNotConsumedContent] = useState();
   const [isContentConsumed, setIsContentConsumed] = useState();
   const [completedContents, setCompletedContents] = useState([]);
-  const [hideLeaveCourseButton , setHideLeaveCourseButton]=useState(false)
 
   const toggleShowMore = () => {
     setShowMore((prevShowMore) => !prevShowMore);
@@ -162,30 +161,25 @@ const JoinCourse = () => {
         setCourseData(data);
         setUserData(data);
 
-       const identifiers = data?.result?.content?.children[0]?.children[0]?.identifier;
-          console.log(identifiers, "setChildNode");
-          setChildNode(identifiers);
+        const identifiers =
+          data?.result?.content?.children[0]?.children[0]?.identifier;
+        setChildNode(identifiers);
 
-          let allContents = [];
+        let allContents = [];
 
-          const getAllLeafIdentifiers = (nodes) => {
-             nodes.forEach((node) => {
-              if (!node?.children || node?.children.length === 0) {
-                 if (node?.identifier) {
-                   allContents.push(node.identifier);
-                 }
-               } else {
-                   getAllLeafIdentifiers(node.children);
-                  }
+        if (data?.result?.content?.children) {
+          data.result.content.children.forEach((parent) => {
+            if (parent.children) {
+              parent.children.forEach((child) => {
+                if (child.identifier) {
+                  allContents.push(child.identifier);
+                }
               });
-            };
-
-            if (data?.result?.content?.children) {
-             getAllLeafIdentifiers(data.result.content.children);
             }
-
-          setAllContents(allContents);
-
+          });
+        }
+        setAllContents(allContents);
+        console.log("allContents-------", allContents);
       } catch (error) {
         console.error("Error fetching course data:", error);
         showErrorMessage(t("FAILED_TO_FETCH_DATA"));
@@ -456,7 +450,6 @@ const JoinCourse = () => {
           }
 
           if (allFound) {
-            setHideLeaveCourseButton(true);
             notConsumedContent = allContents[0];
             try {
               const url = `${urlConfig.URLS.CONTENT_PREFIX}${urlConfig.URLS.COURSE.USER_CONTENT_STATE_UPDATE}`;
@@ -596,7 +589,6 @@ const JoinCourse = () => {
             <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
-              disabled={hideLeaveCourseButton}
             >
               {t("LEAVE_COURSE")}
             </Button>
@@ -645,7 +637,6 @@ const JoinCourse = () => {
             <Button
               onClick={handleLeaveCourseClick} // Open confirmation dialog
               className="custom-btn-danger"
-              disabled={hideLeaveCourseButton}
             >
               {t("LEAVE_COURSE")}
             </Button>

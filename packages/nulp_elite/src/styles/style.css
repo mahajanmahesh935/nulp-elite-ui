@@ -2537,6 +2537,7 @@ Footer {
   font-size: 12px !important;
   border: solid 1px #004367 !important;
   background: #fff !important;
+  cursor:pointer;
 }
 
 .custom-btn-default:hover {
@@ -2719,6 +2720,7 @@ button {
   text-align: center !important;
   text-decoration: none !important;
   background: #057184 !important;
+  cursor: pointer;
 }
 
 .viewAll:hover {
@@ -3289,6 +3291,7 @@ custom-chip {
   font-size: 16px !important;
   color: #000;
   font-weight: 400 !important;
+  margin-top:5px;
 }
 
 .filter-text {
@@ -3737,4 +3740,7 @@ input:required::after {
 }
 .css-1nmdiqf5-menu {
   z-index: 9999999 !important;
+}
+.ai-center {
+  align-items: center;
 }

@@ -38,7 +38,7 @@ import * as util from "../../services/utilService";
 
 import FloatingChatIcon from "components/FloatingChatIcon";
 import SkeletonLoader from "components/skeletonLoader";
-const myEvents = require("./myEvents.json");
+// const myEvents = require("./myEvents.json");
 
 const responsive = {
   superLargeDesktop: {
@@ -65,7 +65,7 @@ const EventList = (props) => {
   const location = useLocation();
   const [pageNumber, setPageNumber] = useState(1);
   const [data, setData] = useState();
-  console.log("myEvents.result.events ---- ", myEvents.result.events);
+  // console.log("myEvents.result.events ---- ", myEvents.result.events);
   const [myData, setMyData] = useState();
   const [filters, setFilters] = useState({});
   const [domainfilter, setDomainfilter] = useState({});
@@ -122,7 +122,7 @@ const EventList = (props) => {
     domainName,
     domain,
     currentPage,
-    subDomainFilter
+    subDomainFilter,
   ]);
   // useEffect(() => {
   //   fetchAllData();
@@ -168,16 +168,19 @@ const EventList = (props) => {
   const fetchAllData = async () => {
     console.log("searchQuery", searchQuery);
     let filters = {
-    objectType: ["Event"],
-    ...((domainfilter?.se_board != null || domainName !=null) && { board: domainfilter?.se_board || [domainName] }),
-    ...(subDomainFilter && { gradeLevel: subDomainFilter }),
-    ...(startDate && { startDate: startDate })
-};
 
+      objectType: ["Event"],
+      ...((domainfilter?.se_board != null || domainName != null) && {
+        board: domainfilter?.se_board || [domainName],
+      }),
+      ...(subDomainFilter && { gradeLevel: subDomainFilter }),
+      ...(startDate && { startDate: startDate }),
+    };
 
     setError(null);
     let data = JSON.stringify({
       request: {
+        status: "Live",
         filters: filters,
         limit: 10,
         query: searchQuery,
@@ -208,7 +211,8 @@ const EventList = (props) => {
     const _userId = util.userId();
     let data = JSON.stringify({
       request: {
-        filters: { user_id: _userId },
+    status: "Live",
+    filters: { user_id: _userId },
         limit: 10,
         sort_by: { created_at: "desc" },
         offset: 0,
@@ -218,8 +222,8 @@ const EventList = (props) => {
       "Content-Type": "application/json",
     };
     try {
-      // const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.EVENT.CUSTOM_ENROLL_LIST}`;
-      const url = `https://devnulp.niua.org/custom_event/enrollment-list`;
+      const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.CUSTOM_EVENT.CUSTOM_ENROLL_LIST}`;
+      // const url = `https://devnulp.niua.org/custom_event/enrollment-list`;
       const response = await getAllContents(url, data, headers);
       console.log("My data  ---", response.data.result.event);
       setMyData(response.data.result.event);
