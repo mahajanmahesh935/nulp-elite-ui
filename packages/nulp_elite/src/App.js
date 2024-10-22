@@ -1,26 +1,10 @@
 import React, { useEffect, useState } from "react";
-
 import "./App.css";
 import "./styles/style.css";
-import {
-  NativeBaseProvider,
-  Box,
-  Stack,
-  VStack,
-  Text,
-  HStack,
-  Button,
-  extendTheme,
-  Actionsheet,
-  ScrollView,
-} from "native-base";
+import { NativeBaseProvider } from "native-base";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import { DEFAULT_THEME, H2, initializeI18n } from "@shiksha/common-lib";
-import { useTranslation, initReactI18next } from "react-i18next";
-import i18n from "i18next";
-
+import { initializeI18n } from "@shiksha/common-lib";
 import * as util from "services/utilService";
-// import { ChakraProvider } from "@chakra-ui/react";
 import Profile from "pages/profile/Profile";
 import Certificate from "pages/profile/certificate";
 import FAQPage from "pages/FAQPage";
@@ -48,13 +32,18 @@ import Dashboard from "pages/events/dashboard";
 import VotingList from "pages/voting/votingList";
 import createForm from "pages/voting/createForm";
 import VotingDetails from "pages/voting/votingDetails";
-import { truncate } from "lodash";
 import votingDashboard from "pages/voting/votingDashboard";
 import pollsDetails from "pages/voting/pollsDetails";
+import LernCreatorForm from "pages/learnathon/lernCreatorForm";
 const urlConfig = require("./configs/urlConfig.json");
 const routeConfig = require("./configs/routeConfig.json");
 import PopupForm from "pages/profileData";
 import axios from "axios";
+import ReactGA from "react-ga4";
+import LernModal from "components/learnathon/LernModal";
+import LernSubmissionTable from "pages/learnathon/LernSubmissionTable";
+import LernVotingList from "pages/learnathon/lernVotingList";
+import LernReviewList from "pages/learnathon/lernReviewerList";
 
 function App() {
   // const [t] = useTranslation();
@@ -67,6 +56,7 @@ function App() {
   const _userId = util.userId();
   const [orgId, setOrgId] = useState();
   const [userData, setUserData] = React.useState(false);
+  ReactGA.initialize("G-QH3SHT9MTG");
 
   const routes = [
     {
@@ -124,12 +114,6 @@ function App() {
       path: routeConfig.ROUTES.JOIN_COURSE_PAGE.JOIN_COURSE,
       component: JoinCourse,
     },
-    // {
-    //   moduleName: "nulp_elite",
-    //   path: "/joinCourse/:contentId",
-    //   component: JoinCourse,
-    // },
-
     {
       moduleName: "nulp_elite",
       path: routeConfig.ROUTES.PLAYER_PAGE.PLAYER,
@@ -225,8 +209,29 @@ function App() {
       path: routeConfig.ROUTES.POLL.POLLS_VIEW_ALL,
       component: pollsDetails,
     },
+    {
+      moduleName: "nulp_elite",
+      path: routeConfig.ROUTES.LEARNATHON.CREATELEARNCONTENT,
+      component: LernCreatorForm,
+    },
+    {
+      moduleName: "nulp_elite",
+      path: routeConfig.ROUTES.LEARNATHON.MYLERNSUBMISSION,
+      component: LernSubmissionTable,
+    },
+    {
+      moduleName: "nulp_elite",
+      path: routeConfig.ROUTES.LEARNATHON.LERNVOTINGLIST,
+      component: LernVotingList,
+    },
+    ,
+    {
+      moduleName: "nulp_elite",
+      path: routeConfig.ROUTES.LEARNATHON.LERNREVIEWLIST,
+      component: LernReviewList,
+    },
   ];
-  createForm;
+
   initializeI18n(
     ["translation"],
     `${process.env.PUBLIC_URL}/locales/{{lng}}/{{ns}}.json`
@@ -248,7 +253,6 @@ function App() {
       };
       const response = await axios.post(url, requestBody);
       const Data = response.data;
-      console.log("Data of user----------- ", Data);
       if (
         (Array.isArray(Data?.result) && Data.result.length === 0) ||
         (Array.isArray(Data?.result) &&
@@ -286,7 +290,7 @@ function App() {
         );
         if (data.result.response.framework.id) {
           // setCheckPref(true);
-          if (data.result.response.framework.id[0] === "nulp") {
+          if (data.result.response.framework.id[0] !== "nulp-domain") {
             setCheckPref(false);
           } else {
             setCheckPref(true);
@@ -298,7 +302,6 @@ function App() {
         console.error("Error fetching user data:", error);
       }
     };
-
     fetchData();
     UserData();
   }, []);
@@ -333,6 +336,8 @@ function App() {
               />
             ))}
           </Routes>
+
+          <LernModal />
         </Router>
       </React.Suspense>
       {/* </ChakraProvider> */}

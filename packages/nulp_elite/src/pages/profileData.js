@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
   TextField,
   FormControl,
   Button,
-  DialogActions,
 } from "@mui/material";
 import Select from "react-select";
 import axios from "axios";
@@ -16,6 +12,7 @@ const urlConfig = require("../configs/urlConfig.json");
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
+import { useTranslation } from "react-i18next";
 
 const style = {
   position: "absolute",
@@ -46,6 +43,8 @@ const PopupForm = ({ open, handleClose }) => {
 
   const [initialFirstName, setInitialFirstName] = useState("");
   const [initialLastName, setInitialLastName] = useState("");
+  const maxChars = 500;
+  const { t } = useTranslation();
 
   useEffect(() => {
     const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.USER.GET_PROFILE}${_userId}`;
@@ -125,10 +124,20 @@ const PopupForm = ({ open, handleClose }) => {
     handleClose();
   };
 
+   const handleBioChange = (e) => {
+    if (e.target.value.length <= maxChars) {
+      setBio(e.target.value);
+    }
+  };
+
   return (
     <Modal
       open={open}
-      onClose={handleClose}
+      onClose={(event, reason) => {
+        if (reason !== "backdropClick" && reason !== "escapeKeyDown") {
+          handleClose();
+        }
+      }}
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
     >
@@ -174,8 +183,12 @@ const PopupForm = ({ open, handleClose }) => {
             type="text"
             fullWidth
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            onChange={handleBioChange}
+            inputProps={{ maxLength: maxChars }}
           />
+          <Typography variant="body2" color="textSecondary">
+            {bio.length}/{maxChars}
+          </Typography>
           <FormControl fullWidth margin="dense">
             <Select
               options={designations}
@@ -226,98 +239,11 @@ const PopupForm = ({ open, handleClose }) => {
             className="custom-btn-primary "
             disabled={isSubmitDisabled}
           >
-            Submit
+            {t("SUBMIT")}
           </Button>
         </Box>
       </Box>
     </Modal>
-    // <Dialog open={open}>
-    //   <DialogTitle>User Information</DialogTitle>
-    //   <DialogContent>
-    //     <TextField
-    //       autoFocus
-    //       margin="dense"
-    //       label="First Name"
-    //       type="text"
-    //       fullWidth
-    //       required
-    //       value={firstName}
-    //       onChange={(e) => setFirstName(e.target.value)}
-    //     />
-    //     <TextField
-    //       autoFocus
-    //       margin="dense"
-    //       label="Last Name"
-    //       type="text"
-    //       fullWidth
-    //       required
-    //       value={lastName}
-    //       onChange={(e) => setLastName(e.target.value)}
-    //     />
-    //     <TextField
-    //       autoFocus
-    //       margin="dense"
-    //       label="Organization *"
-    //       type="text"
-    //       fullWidth
-    //       required
-    //       value={organisation}
-    //       onChange={(e) => setOrganisation(e.target.value)}
-    //     />
-    //     <TextField
-    //       autoFocus
-    //       margin="dense"
-    //       label="Bio"
-    //       type="text"
-    //       fullWidth
-    //       value={bio}
-    //       onChange={(e) => setBio(e.target.value)}
-    //     />
-    //     <FormControl fullWidth margin="dense">
-    //       <Select
-    //         options={designations}
-    //         value={designations.find((option) => option.value === designation)}
-    //         onChange={(selectedOption) => setDesignation(selectedOption.value)}
-    //         placeholder="Select Designation *"
-    //         isClearable
-    //       />
-    //       {designation === 'other' && (
-    //         <TextField
-    //           margin="dense"
-    //           label="Enter Custom Designation"
-    //           type="text"
-    //           fullWidth
-    //           value={customDesignation}
-    //           onChange={(e) => setCustomDesignation(e.target.value)}
-    //         />
-    //       )}
-    //     </FormControl>
-    //     <FormControl fullWidth margin="dense">
-    //       <Select
-    //         options={userTypes}
-    //         value={userTypes.find((option) => option.value === userType)}
-    //         onChange={(selectedOption) => setUserType(selectedOption.value)}
-    //         placeholder="Select User Type *"
-    //         isClearable
-    //       />
-    //       {userType === 'other' && (
-    //         <TextField
-    //           margin="dense"
-    //           label="Enter Custom User Type"
-    //           type="text"
-    //           fullWidth
-    //           value={customUserType}
-    //           onChange={(e) => setCustomUserType(e.target.value)}
-    //         />
-    //       )}
-    //     </FormControl>
-    //   </DialogContent>
-    //   <DialogActions>
-    //     <Button onClick={handleSubmit} color="primary" disabled={isSubmitDisabled}>
-    //       Submit
-    //     </Button>
-    //   </DialogActions>
-    // </Dialog>
   );
 };
 

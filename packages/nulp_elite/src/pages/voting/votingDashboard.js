@@ -9,7 +9,14 @@ import Box from "@mui/material/Box";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
-import { Alert, Button, Card, CardContent, DialogActions, DialogTitle, Tooltip } from "@mui/material";
+import {
+  Alert,
+  Button,
+  Card,
+  CardContent,
+  DialogActions,
+  Tooltip,
+} from "@mui/material";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import IconButton from "@mui/material/IconButton";
@@ -37,12 +44,12 @@ import {
 } from "react-share";
 const urlConfig = require("../../configs/urlConfig.json");
 import { useNavigate } from "react-router-dom";
-import ToasterCommon from "../ToasterCommon";
 import * as util from "../../services/utilService";
 import Toast from "../Toast";
 import Loader from "pages/Loader";
 import Unauthorized from "pages/Unauthorized";
 import moment from "moment";
+import { Loading } from "@shiksha/common-lib";
 
 const votingDashboard = () => {
   const { t } = useTranslation();
@@ -83,40 +90,38 @@ const votingDashboard = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedPollId, setSelectedPollId] = useState(null);
 
-
-
   const handleDialogOpen = (id, event) => {
-    event.stopPropagation(); 
+    event.stopPropagation();
     setDialogOpen(true);
-    setSelectedPollId(id); 
+    setSelectedPollId(id);
   };
 
   const handleDialogClose = () => {
     setDialogOpen(false);
   };
 
-    const handleDeletePollConfirmed = async (event) => {
-      event.stopPropagation();
-      try {
-        const response = await axios.delete(
-          `${urlConfig.URLS.POLL.DELETE_POLL}?poll_id=${selectedPollId}`
-        );
-        if (response.status === 200) {
-          setDialogOpen(false);
-          // console.log(response.params.status);
-          setToasterMessage("Poll deleted successfully");
-          fetchPolls();
-          setPoll((prevPolls) => {
-            const updatedPolls = prevPolls.filter(
-              (poll) => poll.poll_id !== selectedPollId
-            );
-            return updatedPolls;
-          });
-        }
-      } catch (error) {
-        console.error("Error deleting poll", error);
+  const handleDeletePollConfirmed = async (event) => {
+    event.stopPropagation();
+    try {
+      const response = await axios.delete(
+        `${urlConfig.URLS.POLL.DELETE_POLL}?poll_id=${selectedPollId}`
+      );
+      if (response.status === 200) {
+        setDialogOpen(false);
+        // console.log(response.params.status);
+        setToasterMessage("Poll deleted successfully");
+        fetchPolls();
+        setPoll((prevPolls) => {
+          const updatedPolls = prevPolls.filter(
+            (poll) => poll.poll_id !== selectedPollId
+          );
+          return updatedPolls;
+        });
       }
-    };
+    } catch (error) {
+      console.error("Error deleting poll", error);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -177,13 +182,16 @@ const votingDashboard = () => {
     };
 
     try {
-      const response = await fetch(`${urlConfig.URLS.POLL.LIST}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        `${urlConfig.URLS.POLL.LIST}?dashboard=true`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch polls");
@@ -253,8 +261,6 @@ const votingDashboard = () => {
     });
     fetchPolls();
   };
-
- 
 
   const openSocialMediaLink = (event, url) => {
     event.stopPropagation();
@@ -327,7 +333,7 @@ const votingDashboard = () => {
                 <Grid item xs={12} md={3} className="lg-pl-0">
                   <FormControl fullWidth>
                     <InputLabel htmlFor="outlined-adornment-search">
-                      Search for a Poll
+                      {t("SEARCH_FOR_POLL")}
                     </InputLabel>
                     <OutlinedInput
                       id="outlined-adornment-search"
@@ -341,7 +347,7 @@ const votingDashboard = () => {
                           </IconButton>
                         </InputAdornment>
                       }
-                      label="Search poll"
+                      label={t("SEARCH_FOR_POLL")}
                     />
                   </FormControl>
                 </Grid>
@@ -349,7 +355,7 @@ const votingDashboard = () => {
                   {/* <Box className="ml-20">Select Date Range</Box> */}
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label="Select Date From"
+                      label={t("SELECT_DATE_FROM")}
                       value={selectedStartDate}
                       onChange={(newValue) => setSelectedStartDate(newValue)}
                     />
@@ -358,7 +364,7 @@ const votingDashboard = () => {
                 <Grid item xs={12} md={3}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label="Select Date To"
+                      label={t("SELECT_DATE_TO")}
                       value={selectedEndDate}
                       onChange={(newValue) => setSelectedEndDate(newValue)}
                     />
@@ -372,7 +378,7 @@ const votingDashboard = () => {
                     onClick={handleClearAll}
                     fullWidth
                   >
-                    Clear all
+                    {t("CLEAR_ALL")}
                   </Button>
                 </Grid>
               </Grid>
@@ -387,7 +393,7 @@ const votingDashboard = () => {
           >
             <Box display="flex" alignItems="center" className="h3-title">
               <DashboardOutlinedIcon style={{ paddingRight: "10px" }} />
-              Live Polls
+              {t("LIVE_POLLS")}
             </Box>
             {!showAllLive && visibleLivePolls.length >= 3 && (
               <Box>
@@ -396,15 +402,17 @@ const votingDashboard = () => {
                   className="custom-btn-primary ml-20"
                   onClick={() => handleViewAll(livePolls, "live")}
                 >
-                  View All
+                  {t("VIEW_ALL")}
                 </Button>
               </Box>
             )}
           </Box>
 
           <Grid container spacing={2} style={{ marginBottom: "30px" }}>
-            {visibleLivePolls && visibleLivePolls?.length >= 1 ? (
-              visibleLivePolls?.map((items, index) => (
+            {isLoading ? (
+              <Loading message={t("LOADING")} />
+            ) : visibleLivePolls && visibleLivePolls.length >= 1 ? (
+              visibleLivePolls.map((items, index) => (
                 <Grid
                   item
                   xs={12}
@@ -414,7 +422,7 @@ const votingDashboard = () => {
                   key={items.poll_id}
                 >
                   <Card
-                    className="pb-10"
+                    className="pb-10 cardBox1"
                     sx={{
                       position: "relative",
                       cursor: "pointer",
@@ -424,7 +432,7 @@ const votingDashboard = () => {
                     }}
                     onClick={() => handleCardClick(items.poll_id)}
                   >
-                    <CardContent className="d-flex jc-bw">
+                    <CardContent className="d-flex">
                       <Grid
                         item
                         xs={12}
@@ -437,7 +445,7 @@ const votingDashboard = () => {
                           {items.title && (
                             <Typography
                               gutterBottom
-                              className="mt-10  event-title width-inherit"
+                              className="mt-10 event-title width-inherit"
                             >
                               {items.title}
                             </Typography>
@@ -446,65 +454,49 @@ const votingDashboard = () => {
                             className="d-flex h6-title mt-30"
                             style={{ color: "#484848" }}
                           >
-                            <Box className="d-flex jc-bw alignItems-center fs-13">
+                            <Box className="d-flex alignItems-center">
                               <TodayOutlinedIcon className="fs-14 pr-5" />
-                              {moment(items?.start_date).format(
+                              {moment(items.start_date).format(
                                 "dddd, MMMM Do YYYY, h:mm:ss a"
                               )}
                             </Box>
                           </Box>
                           <Box className="fs-14">
-                            {items?.poll_keywords && (
+                            {items.poll_keywords && items.poll_keywords.length > 0 ? (
                               <>
-                                {items.poll_keywords
-                                  .slice(0, 2)
-                                  .map((keyword, index) => (
-                                    <Tooltip
-                                      key={index}
-                                      title={keyword}
-                                      placement="right"
-                                      className="customlabeltwo cardLabelEllips"
-                                    >
-                                      <Button className="d-inline-block">
-                                        {index < 2
-                                          ? keyword
-                                          : `${keyword} + ${items.poll_keywords.length - 2
-                                          }`}
-                                      </Button>
-                                    </Tooltip>
-                                  ))}
-                                {items.poll_keywords.length > 3 && (
+                                {items.poll_keywords.slice(0, 2).map((keyword, index) => (
                                   <Tooltip
-                                    title={items.poll_keywords
-                                      .slice(3)
-                                      .join(", ")}
+                                    key={index}
+                                    title={keyword}
                                     placement="right"
-                                    className="customlabeltwo cardLabelEllips"
+                                    className="customlabeltwo"
                                   >
                                     <Button className="d-inline-block">
-                                      {items.poll_keywords[2]} +{" "}
-                                      {items.poll_keywords.length - 3}
+                                    {index < 2
+                                          ? keyword
+                                          : `${keyword} + ${
+                                              items.poll_keywords.length - 2
+                                            }`}
+                                    </Button>
+                                  </Tooltip>
+                                ))}
+                                {items.poll_keywords.length > 3 && (
+                                  <Tooltip
+                                    title={items.poll_keywords.slice(3).join(", ")}
+                                    placement="right"
+                                    className="customlabeltwo"
+                                  >
+                                    <Button className="d-inline-block">
+                                      {items.poll_keywords[2]} + {items.poll_keywords.length - 3}
                                     </Button>
                                   </Tooltip>
                                 )}
                               </>
+                            ) : (
+                              <Box style={{ height: "40px" }} />
                             )}
                           </Box>
                         </Box>
-                        {/* <Box
-                        className="card-img-container"
-                        style={{ position: "inherit" }}
-                      >
-                        <img
-                          src={
-                            items.image
-                              ? items.image
-                              : require("assets/default.png")
-                          }
-                          className="event-card-img"
-                          alt="App Icon"
-                        />
-                      </Box> */}
                       </Grid>
                       <Grid
                         item
@@ -523,20 +515,14 @@ const votingDashboard = () => {
                               openSocialMediaLink(event, shareUrl);
                             }}
                           >
-                            <FacebookIcon
-                              url={shareUrl}
-                              size={32}
-                              round={true}
-                            />
+                            <FacebookIcon url={shareUrl} size={32} round={true} />
                           </FacebookShareButton>
                           <WhatsappShareButton
                             url={shareUrl}
                             title={`Check out this poll: ${items.title}`}
                             separator=":: "
                             className="pr-4"
-                            onClick={(event) =>
-                              openSocialMediaLink(event, shareUrl)
-                            }
+                            onClick={(event) => openSocialMediaLink(event, shareUrl)}
                           >
                             <WhatsappIcon size={32} round />
                           </WhatsappShareButton>
@@ -545,9 +531,7 @@ const votingDashboard = () => {
                             className="pr-4"
                             title={items.title}
                             summary={`Participate in this poll: ${items.title}`}
-                            onClick={(event) => {
-                              openSocialMediaLink(event, shareUrl);
-                            }}
+                            onClick={(event) => openSocialMediaLink(event, shareUrl)}
                           >
                             <LinkedinIcon size={32} round={true} />
                           </LinkedinShareButton>
@@ -555,9 +539,7 @@ const votingDashboard = () => {
                             url={shareUrl}
                             className="pr-4"
                             title={`Check out this poll: ${items.title}`}
-                            onClick={(event) => {
-                              openSocialMediaLink(event, shareUrl);
-                            }}
+                            onClick={(event) => openSocialMediaLink(event, shareUrl)}
                           >
                             <img
                               src={require("../../assets/twitter.png")}
@@ -568,16 +550,14 @@ const votingDashboard = () => {
                         </Box>
                       </Grid>
                     </CardContent>
-                    <Box className="voting-text lg-mt-30">
+                    <Box className="voting-text">
                       <Box>
                         <Button
                           type="button"
                           className="custom-btn-primary ml-20 lg-mt-20 mb-10"
-                          onClick={(event) =>
-                            handleOpenModal(items.poll_id, event)
-                          }
+                          onClick={(event) => handleOpenModal(items.poll_id, event)}
                         >
-                          View Stats{" "}
+                          {t("VIEW_STATUS")}{" "}
                           <ArrowForwardIosOutlinedIcon className="fs-12" />
                         </Button>
                         <Button
@@ -585,22 +565,21 @@ const votingDashboard = () => {
                           type="button"
                           className="custom-btn-primary ml-20 lg-mt-20 mb-10"
                         >
-                          Edit <ArrowForwardIosOutlinedIcon className="fs-12" />
+                          {t("EDIT")} <ArrowForwardIosOutlinedIcon className="fs-12" />
                         </Button>
-                        {admin ||
-                          (contentCreator && (
-                            <Button
-                              type="button"
-                              className="custom-btn-primary ml-20 lg-mt-20 mb-10"
-                              onClick={(event) => {
-                                event.stopPropagation(); 
-                                handleDialogOpen(items.poll_id, event);
-                              }}
-                            >
-                              Delete{" "}
-                              <ArrowForwardIosOutlinedIcon className="fs-12" />
-                            </Button>
-                          ))}
+                        {(admin || contentCreator) && (
+                          <Button
+                            type="button"
+                            className="custom-btn-primary ml-20 lg-mt-20 mb-10"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleDialogOpen(items.poll_id, event);
+                            }}
+                          >
+                            {t("DELETE")}{" "}
+                            <ArrowForwardIosOutlinedIcon className="fs-12" />
+                          </Button>
+                        )}
                       </Box>
                     </Box>
                     <Box className="lg-hide pl-20">
@@ -608,9 +587,7 @@ const votingDashboard = () => {
                         url={shareUrl}
                         className="pr-4"
                         quote={`Check out this poll: ${items.title}`}
-                        onClick={(event) => {
-                          openSocialMediaLink(event, shareUrl);
-                        }}
+                        onClick={(event) => openSocialMediaLink(event, shareUrl)}
                       >
                         <FacebookIcon url={shareUrl} size={32} round={true} />
                       </FacebookShareButton>
@@ -619,9 +596,7 @@ const votingDashboard = () => {
                         title={`Check out this poll: ${items.title}`}
                         separator=":: "
                         className="pr-4"
-                        onClick={(event) =>
-                          openSocialMediaLink(event, shareUrl)
-                        }
+                        onClick={(event) => openSocialMediaLink(event, shareUrl)}
                       >
                         <WhatsappIcon size={32} round />
                       </WhatsappShareButton>
@@ -630,9 +605,7 @@ const votingDashboard = () => {
                         className="pr-4"
                         title={items.title}
                         summary={`Participate in this poll: ${items.title}`}
-                        onClick={(event) => {
-                          openSocialMediaLink(event, shareUrl);
-                        }}
+                        onClick={(event) => openSocialMediaLink(event, shareUrl)}
                       >
                         <LinkedinIcon size={32} round={true} />
                       </LinkedinShareButton>
@@ -640,9 +613,7 @@ const votingDashboard = () => {
                         url={shareUrl}
                         className="pr-4"
                         title={`Check out this poll: ${items.title}`}
-                        onClick={(event) => {
-                          openSocialMediaLink(event, shareUrl);
-                        }}
+                        onClick={(event) => openSocialMediaLink(event, shareUrl)}
                       >
                         <img
                           src={require("../../assets/twitter.png")}
@@ -664,7 +635,7 @@ const votingDashboard = () => {
                 className="h2-title mt-30"
               >
                 <Alert severity="info" style={{ margin: "10px 0" }}>
-                  It looks like there are no live polls at the moment.
+                  {t("NO_POLL_AVAILABLE_NOW")}
                 </Alert>
               </Grid>
             )}
@@ -678,7 +649,7 @@ const votingDashboard = () => {
           >
             <Box display="flex" alignItems="center" className="h3-title">
               <DashboardOutlinedIcon style={{ paddingRight: "10px" }} />
-              Draft Polls
+              {t("DRAFT_POLLS")}
             </Box>
             {!showAllDraft && visibleDraftPolls.length >= 3 && (
               <Box>
@@ -687,13 +658,15 @@ const votingDashboard = () => {
                   className="custom-btn-primary ml-20"
                   onClick={() => handleViewAll(draftPolls, "Draft")}
                 >
-                  View All
+                  {t("VIEW_ALL")}
                 </Button>
               </Box>
             )}
           </Box>
           <Grid container spacing={2} style={{ marginBottom: "30px" }}>
-            {visibleDraftPolls && visibleDraftPolls?.length >= 1 ? (
+          {isLoading ? (
+              <Loading message={t("LOADING")} /> 
+            ) : visibleDraftPolls && visibleDraftPolls?.length >= 1 ? (
               visibleDraftPolls?.map((items, index) => (
                 <Grid
                   item
@@ -704,7 +677,7 @@ const votingDashboard = () => {
                   key={items.poll_id}
                 >
                   <Card
-                    className="pb-10"
+                    className="pb-10 cardBox1"
                     sx={{
                       position: "relative",
                       cursor: "pointer",
@@ -716,7 +689,7 @@ const votingDashboard = () => {
                   >
                     <CardContent>
                       <Box>
-                        <Box className="d-flex jc-bw">
+                        <Box className="d-flex">
                           <Box>
                             {items.title && (
                               <Typography
@@ -731,7 +704,7 @@ const votingDashboard = () => {
                             <Box className="xs-hide text-right">
                               <FacebookShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 quote={`Check out this poll: ${items.title}`}
                                 onClick={(event) => {
                                   openSocialMediaLink(event, shareUrl);
@@ -747,7 +720,7 @@ const votingDashboard = () => {
                                 url={shareUrl}
                                 title={`Check out this poll: ${items.title}`}
                                 separator=":: "
-                                className="pr-5"
+                                className="pr-3"
                                 onClick={(event) =>
                                   openSocialMediaLink(event, shareUrl)
                                 }
@@ -756,7 +729,7 @@ const votingDashboard = () => {
                               </WhatsappShareButton>
                               <LinkedinShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 title={items.title}
                                 summary={`Participate in this poll: ${items.title}`}
                                 onClick={(event) => {
@@ -767,7 +740,7 @@ const votingDashboard = () => {
                               </LinkedinShareButton>
                               <TwitterShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 title={`Check out this poll: ${items.title}`}
                                 onClick={(event) => {
                                   openSocialMediaLink(event, shareUrl);
@@ -786,7 +759,7 @@ const votingDashboard = () => {
                           className="d-flex h6-title mt-30"
                           style={{ color: "#484848" }}
                         >
-                          <Box className="d-flex jc-bw alignItems-center fs-13">
+                          <Box className="d-flex alignItems-center">
                             <TodayOutlinedIcon className="fs-14 pr-5" />
                             {moment(items?.start_date).format(
                               "dddd, MMMM Do YYYY, h:mm:ss a"
@@ -794,82 +767,68 @@ const votingDashboard = () => {
                           </Box>
                         </Box>
                         <Box className="fs-14">
-                          {items?.poll_keywords && (
+                          {items?.poll_keywords && items.poll_keywords.length > 0 ? (
                             <>
-                              {items.poll_keywords
-                                .slice(0, 2)
-                                .map((keyword, index) => (
-                                  <Tooltip
-                                    key={index}
-                                    title={keyword}
-                                    placement="right"
-                                    className="customlabeltwo cardLabelEllips"
-                                  >
-                                    <Button className="d-inline-block">
-                                      {index < 2
-                                        ? keyword
-                                        : `${keyword} + ${items.poll_keywords.length - 2
-                                        }`}
-                                    </Button>
-                                  </Tooltip>
-                                ))}
-                              {items.poll_keywords.length > 3 && (
+                              {items.poll_keywords.slice(0, 2).map((keyword, index) => (
                                 <Tooltip
-                                  title={items.poll_keywords
-                                    .slice(3)
-                                    .join(", ")}
+                                  key={index}
+                                  title={keyword}
                                   placement="right"
-                                  className="customlabeltwo cardLabelEllips"
+                                  className="customlabeltwo"
                                 >
                                   <Button className="d-inline-block">
-                                    {items.poll_keywords[2]} +{" "}
-                                    {items.poll_keywords.length - 3}
+                                    {index < 2
+                                      ? keyword
+                                      : `${keyword} + ${items.poll_keywords.length - 2
+                                      }`}
+                                  </Button>
+                                </Tooltip>
+                              ))}
+                              {items.poll_keywords.length > 3 && (
+                                <Tooltip
+                                  title={items.poll_keywords.slice(3).join(", ")}
+                                  placement="right"
+                                  className="customlabeltwo"
+                                >
+                                  <Button className="d-inline-block">
+                                    {items.poll_keywords[2]} + {items.poll_keywords.length - 3}
                                   </Button>
                                 </Tooltip>
                               )}
                             </>
+                          ) : (
+                            <Box style={{ height: "40px" }}>
+                            </Box>
                           )}
                         </Box>
+
                       </Box>
-                      {/* <Box
-                        className="card-img-container"
-                        style={{ position: "inherit" }}
-                      >
-                        <img
-                          src={
-                            items.image
-                              ? items.image
-                              : require("assets/default.png")
-                          }
-                          className="event-card-img"
-                          alt="App Icon"
-                        />
-                      </Box> */}
                     </CardContent>
-                    <Box className="voting-text lg-mt-30">
+                    <Box className="voting-text">
                       <Box>
                         <Button
                           onClick={(event) => handleEdit(event, items)}
                           type="button"
                           className="custom-btn-primary ml-20 lg-mt-20 mb-10"
                         >
-                          Edit <ArrowForwardIosOutlinedIcon className="fs-12" />
+                          {t("EDIT")} <ArrowForwardIosOutlinedIcon className="fs-12" />
                         </Button>
                         <Button
-                        type="button"
-                        className="custom-btn-primary ml-20 lg-mt-20 mb-10"
-                        onClick={(event) => {
-                          event.stopPropagation(); 
-                          handleDialogOpen(items.poll_id, event);
-                        }}
-                      >
-                        Delete <ArrowForwardIosOutlinedIcon className="fs-12" />
-                      </Button>
+                          type="button"
+                          className="custom-btn-primary ml-20 lg-mt-20 mb-10"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDialogOpen(items.poll_id, event);
+                          }}
+                        >
+                          {t("DELETE")}{" "}
+                          <ArrowForwardIosOutlinedIcon className="fs-12" />
+                        </Button>
                       </Box>
                       <Box className="lg-hide pl-20">
                         <FacebookShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           quote={`Check out this poll: ${items.title}`}
                           onClick={(event) => {
                             openSocialMediaLink(event, shareUrl);
@@ -881,7 +840,7 @@ const votingDashboard = () => {
                           url={shareUrl}
                           title={`Check out this poll: ${items.title}`}
                           separator=":: "
-                          className="pr-5"
+                          className="pr-3"
                           onClick={(event) =>
                             openSocialMediaLink(event, shareUrl)
                           }
@@ -890,7 +849,7 @@ const votingDashboard = () => {
                         </WhatsappShareButton>
                         <LinkedinShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           title={items.title}
                           summary={`Participate in this poll: ${items.title}`}
                           onClick={(event) => {
@@ -901,7 +860,7 @@ const votingDashboard = () => {
                         </LinkedinShareButton>
                         <TwitterShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           title={`Check out this poll: ${items.title}`}
                           onClick={(event) => {
                             openSocialMediaLink(event, shareUrl);
@@ -918,7 +877,7 @@ const votingDashboard = () => {
                   </Card>
                 </Grid>
               ))
-            ) : (
+          ) : (
               <Grid
                 item
                 xs={12}
@@ -928,7 +887,7 @@ const votingDashboard = () => {
                 className="h2-title mt-30"
               >
                 <Alert severity="info" style={{ margin: "10px 0" }}>
-                  It looks like there are no Draft polls at the moment.
+                  {t("NO_POLL_AVAILABLE_NOW")}
                 </Alert>
               </Grid>
             )}
@@ -942,7 +901,7 @@ const votingDashboard = () => {
           >
             <Box display="flex" alignItems="center" className="h3-title">
               <WorkspacePremiumIcon style={{ paddingRight: "10px" }} />
-              Closed Polls
+             {t("CLOSED_POLLS")}
             </Box>
             {!showAllClosed && visibleClosedPolls.length >= 3 && (
               <Box>
@@ -951,13 +910,15 @@ const votingDashboard = () => {
                   className="custom-btn-primary ml-20"
                   onClick={() => handleViewAll(closedPolls, "closed")}
                 >
-                  View All
+                  {t("VIEW_ALL")}
                 </Button>
               </Box>
             )}
           </Box>
           <Grid container spacing={2} style={{ marginBottom: "30px" }}>
-            {visibleClosedPolls && visibleClosedPolls?.length >= 1 ? (
+          {isLoading ? (
+              <Loading message={t("LOADING")} /> 
+            ) : visibleClosedPolls && visibleClosedPolls?.length >= 1 ? (
               visibleClosedPolls?.map((items, index) => (
                 <Grid
                   item
@@ -968,7 +929,7 @@ const votingDashboard = () => {
                   key={items.poll_id}
                 >
                   <Card
-                    className="pb-10"
+                    className="pb-10 cardBox1"
                     sx={{
                       position: "relative",
                       cursor: "pointer",
@@ -980,7 +941,7 @@ const votingDashboard = () => {
                   >
                     <CardContent>
                       <Box>
-                        <Box className="d-flex jc-bw">
+                        <Box className="d-flex">
                           <Box>
                             {items.title && (
                               <Typography
@@ -995,7 +956,7 @@ const votingDashboard = () => {
                             <Box className="xs-hide text-right">
                               <FacebookShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 quote={`Check out this poll: ${items.title}`}
                                 onClick={(event) => {
                                   openSocialMediaLink(event, shareUrl);
@@ -1011,7 +972,7 @@ const votingDashboard = () => {
                                 url={shareUrl}
                                 title={`Check out this poll: ${items.title}`}
                                 separator=":: "
-                                className="pr-5"
+                                className="pr-3"
                                 onClick={(event) =>
                                   openSocialMediaLink(event, shareUrl)
                                 }
@@ -1020,7 +981,7 @@ const votingDashboard = () => {
                               </WhatsappShareButton>
                               <LinkedinShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 title={items.title}
                                 summary={`Participate in this poll: ${items.title}`}
                                 onClick={(event) => {
@@ -1031,7 +992,7 @@ const votingDashboard = () => {
                               </LinkedinShareButton>
                               <TwitterShareButton
                                 url={shareUrl}
-                                className="pr-5"
+                                className="pr-3"
                                 title={`Check out this poll: ${items.title}`}
                                 onClick={(event) => {
                                   openSocialMediaLink(event, shareUrl);
@@ -1050,7 +1011,7 @@ const votingDashboard = () => {
                           className="d-flex h6-title mt-30"
                           style={{ color: "#484848" }}
                         >
-                          <Box className="d-flex jc-bw alignItems-center fs-13">
+                          <Box className="d-flex alignItems-center">
                             <TodayOutlinedIcon className="fs-14 pr-5" />
                             {moment(items?.start_date).format(
                               "dddd, MMMM Do YYYY, h:mm:ss a"
@@ -1058,16 +1019,15 @@ const votingDashboard = () => {
                           </Box>
                         </Box>
                         <Box className="fs-14">
-                          {items?.poll_keywords && (
-                            <>
-                              {items.poll_keywords
-                                .slice(0, 2)
-                                .map((keyword, index) => (
+                          <Box className="fs-14">
+                            {items?.poll_keywords && items.poll_keywords.length > 0 ? (
+                              <>
+                                {items.poll_keywords.slice(0, 2).map((keyword, index) => (
                                   <Tooltip
                                     key={index}
                                     title={keyword}
                                     placement="right"
-                                    className="customlabeltwo cardLabelEllips"
+                                    className="customlabeltwo"
                                   >
                                     <Button className="d-inline-block">
                                       {index < 2
@@ -1077,52 +1037,39 @@ const votingDashboard = () => {
                                     </Button>
                                   </Tooltip>
                                 ))}
-                              {items.poll_keywords.length > 3 && (
-                                <Tooltip
-                                  title={items.poll_keywords
-                                    .slice(3)
-                                    .join(", ")}
-                                  placement="right"
-                                  className="customlabeltwo cardLabelEllips"
-                                >
-                                  <Button className="d-inline-block">
-                                    {items.poll_keywords[2]} +{" "}
-                                    {items.poll_keywords.length - 3}
-                                  </Button>
-                                </Tooltip>
-                              )}
-                            </>
-                          )}
+                                {items.poll_keywords.length > 3 && (
+                                  <Tooltip
+                                    title={items.poll_keywords.slice(3).join(", ")}
+                                    placement="right"
+                                    className="customlabeltwo"
+                                  >
+                                    <Button className="d-inline-block">
+                                      {items.poll_keywords[2]} +{" "}
+                                      {items.poll_keywords.length - 3}
+                                    </Button>
+                                  </Tooltip>
+                                )}
+                              </>
+                            ) : (
+                              <Box className="d-inline-block" style={{ height: "40px" }} />
+                            )}
+                          </Box>
                         </Box>
                       </Box>
-                      {/* <Box
-                        className="card-img-container"
-                        style={{ position: "inherit" }}
-                      >
-                        <img
-                          src={
-                            items.image
-                              ? items.image
-                              : require("assets/default.png")
-                          }
-                          className="event-card-img"
-                          alt="App Icon"
-                        />
-                      </Box> */}
                     </CardContent>
-                    <Box className="voting-text lg-mt-30">
+                    <Box className="voting-text">
                       <Box>
                         <Button
-                              type="button"
-                              className="custom-btn-primary ml-20 lg-mt-20 mb-10"
-                              onClick={(event) => {
-                                event.stopPropagation(); 
-                                handleDialogOpen(items.poll_id, event);
-                              }}
-                            >
-                              Delete{" "}
-                              <ArrowForwardIosOutlinedIcon className="fs-12" />
-                            </Button>
+                          type="button"
+                          className="custom-btn-primary ml-20 lg-mt-20 mb-10"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDialogOpen(items.poll_id, event);
+                          }}
+                        >
+                          {t("DELETE")}{" "}
+                          <ArrowForwardIosOutlinedIcon className="fs-12" />
+                        </Button>
                         <Button
                           type="button"
                           className="custom-btn-primary ml-20 lg-mt-20 mb-10"
@@ -1130,14 +1077,14 @@ const votingDashboard = () => {
                             handleOpenModal(items.poll_id, event)
                           }
                         >
-                          View Results{" "}
+                          {t("VIEW_RESULT")}{" "}
                           <ArrowForwardIosOutlinedIcon className="fs-12" />
                         </Button>
                       </Box>
                       <Box className="lg-hide pl-20">
                         <FacebookShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           quote={`Check out this poll: ${items.title}`}
                           onClick={(event) => {
                             openSocialMediaLink(event, shareUrl);
@@ -1149,7 +1096,7 @@ const votingDashboard = () => {
                           url={shareUrl}
                           title={`Check out this poll: ${items.title}`}
                           separator=":: "
-                          className="pr-5"
+                          className="pr-3"
                           onClick={(event) =>
                             openSocialMediaLink(event, shareUrl)
                           }
@@ -1158,7 +1105,7 @@ const votingDashboard = () => {
                         </WhatsappShareButton>
                         <LinkedinShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           title={items.title}
                           summary={`Participate in this poll: ${items.title}`}
                           onClick={(event) => {
@@ -1169,7 +1116,7 @@ const votingDashboard = () => {
                         </LinkedinShareButton>
                         <TwitterShareButton
                           url={shareUrl}
-                          className="pr-5"
+                          className="pr-3"
                           title={`Check out this poll: ${items.title}`}
                           onClick={(event) => {
                             openSocialMediaLink(event, shareUrl);
@@ -1196,7 +1143,7 @@ const votingDashboard = () => {
                 className="h2-title mt-30"
               >
                 <Alert severity="info" style={{ margin: "10px 0" }}>
-                  It looks like there are no Closed polls at the moment.
+                  {t("NO_POLL_AVAILABLE_NOW")}
                 </Alert>
               </Grid>
             )}
@@ -1208,132 +1155,135 @@ const votingDashboard = () => {
       <FloatingChatIcon />
       <Footer />
       {signlePOll && (
-        <><Dialog
-          fullWidth={true}
-          maxWidth="lg"
-          open={openModal}
-          onClose={handleCloseModal}
-        >
-          <IconButton
-            aria-label="close"
-            onClick={handleCloseModal}
-            sx={{
-              position: "absolute",
-              right: 8,
-              top: 8,
-            }}
+        <>
+          <Dialog
+            fullWidth={true}
+            maxWidth="lg"
+            open={openModal}
+            onClose={handleCloseModal}
           >
-            <CloseIcon />
-          </IconButton>
-          <DialogContent>
-            <Grid container>
-              <Grid
-                item
-                xs={12}
-                sm={12}
-                lg={4}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
-                  width: "100%",
-                  order: { xs: 2, lg: 1 },
-                }}
-              >
-                <Box sx={{ marginLeft: "25%" }}>
-                  {hasPollData ? (
-                    <PieChart
-                      series={[
-                        {
-                          data: pieData.map((d) => ({
-                            value: d.count,
-                            label: d.poll_option,
-                          })),
-                          arcLabel: (item) => (
-                            <>
-                              ({getProgressValue(item.value).toFixed(2)})
-                            </>
-                          ),
-                          arcLabelMinAngle: 45,
-                        },
-                      ]}
-                      sx={{
-                        [`& .${pieArcLabelClasses.root}`]: {
-                          fill: 'white',
-                          fontSize: 14,
-                        },
-                      }}
-                      {...sizing} />
-                  ) : (
-                    <Box>No data available</Box>
-                  )}
-                </Box>
-              </Grid>
-              <Grid
-                item
-                xs={12}
-                sm={12}
-                lg={8}
-                sx={{
-                  p: 2,
-                  order: { xs: 1, lg: 2 },
-                }}
-              >
-                <Box className="h1-title fw-600 lg-mt-20">
-                  {signlePOll.title}
-                </Box>
-                <Box>
-
-                  <Box>
-                    <Box className="mt-9 h5-title">
-                      Poll Created On:
-                      <TodayOutlinedIcon
-                        className="fs-14 pr-5"
-                        style={{ verticalAlign: "middle" }} />
-                      {moment(signlePOll.created_at).format(
-                        "dddd, MMMM Do YYYY, h:mm:ss a"
-                      )}
-                    </Box>
-                    <Box className="mt-9 h5-title">
-                      Poll Ended On:
-                      <TodayOutlinedIcon
-                        className="fs-14 pr-5"
-                        style={{ verticalAlign: "middle" }} />{" "}
-                      {moment(signlePOll.end_date).format(
-                        "dddd, MMMM Do YYYY, h:mm:ss a"
-                      )}
-                    </Box>
-                    <Box className="mt-9 h5-title">Total Votes: {totalVotes}</Box>
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseModal}
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+            <DialogContent>
+              <Grid container>
+                <Grid
+                  item
+                  xs={12}
+                  sm={12}
+                  lg={4}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "100%",
+                    width: "100%",
+                    order: { xs: 2, lg: 1 },
+                  }}
+                >
+                  <Box sx={{ marginLeft: "25%" }}>
+                    {hasPollData ? (
+                      <PieChart
+                        series={[
+                          {
+                            data: pieData.map((d) => ({
+                              value: d.count,
+                              label: d.poll_option,
+                            })),
+                            arcLabel: (item) => (
+                              <>({getProgressValue(item.value).toFixed(2)})</>
+                            ),
+                            arcLabelMinAngle: 45,
+                          },
+                        ]}
+                        sx={{
+                          [`& .${pieArcLabelClasses.root}`]: {
+                            fill: "white",
+                            fontSize: 14,
+                          },
+                        }}
+                        {...sizing}
+                      />
+                    ) : (
+                      <Box>{t("NO_DATA_FOUND")}</Box>
+                    )}
                   </Box>
-                </Box>
+                </Grid>
+                <Grid
+                  item
+                  xs={12}
+                  sm={12}
+                  lg={8}
+                  sx={{
+                    p: 2,
+                    order: { xs: 1, lg: 2 },
+                  }}
+                >
+                  <Box className="h1-title fw-600 lg-mt-20">
+                    {signlePOll.title}
+                  </Box>
+                  <Box>
+                    <Box>
+                      <Box className="mt-9 h5-title">
+                        {t("CREATED_ON")}:
+                        <TodayOutlinedIcon
+                          className="fs-14 pr-5"
+                          style={{ verticalAlign: "middle" }}
+                        />
+                        {moment(signlePOll.created_at).format(
+                          "dddd, MMMM Do YYYY, h:mm:ss a"
+                        )}
+                      </Box>
+                      <Box className="mt-9 h5-title">
+                        {t("ENDED_ON")}:
+                        <TodayOutlinedIcon
+                          className="fs-14 pr-5"
+                          style={{ verticalAlign: "middle" }}
+                        />{" "}
+                        {moment(signlePOll.end_date).format(
+                          "dddd, MMMM Do YYYY, h:mm:ss a"
+                        )}
+                      </Box>
+                      <Box className="mt-9 h5-title">
+                        {t("TOTAL_VOTES")}: {totalVotes}
+                      </Box>
+                    </Box>
+                  </Box>
+                </Grid>
               </Grid>
-            </Grid>
-          </DialogContent>
-        </Dialog>
-        <Dialog
-          open={dialogOpen}
-          onClose={handleDialogClose}
-        >
+            </DialogContent>
+          </Dialog>
+          <Dialog open={dialogOpen} onClose={handleDialogClose}>
             <DialogContent>
               <Box className="h5-title">
-                Are you sure you want to delere this poll?
+                {t("CONFIRM_POLL_DELETE")}
               </Box>
-        
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleDialogClose} className="custom-btn-default">
-               No
+              <Button
+                onClick={handleDialogClose}
+                className="custom-btn-default"
+              >
+                {t("NO")}
               </Button>
               <Button
-               onClick={(event) => handleDeletePollConfirmed(event)}
+                onClick={(event) => handleDeletePollConfirmed(event)}
                 className="custom-btn-primary"
-               
               >
-                Yes
+                {t("YES")}
+
               </Button>
             </DialogActions>
-          </Dialog></>
+          </Dialog>
+        </>
       )}
     </div>
   );

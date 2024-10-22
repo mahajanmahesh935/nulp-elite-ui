@@ -4,7 +4,6 @@ import CardContent from "@mui/material/CardContent";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import Modal from "@mui/material/Modal";
 import { useTranslation } from "react-i18next";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
@@ -20,7 +19,6 @@ import {
 } from "react-share";
 import { styled } from "@mui/material/styles";
 import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
@@ -96,16 +94,6 @@ export default function VotingCard({ items, index, onClick }) {
   };
 
   const isVotingEnded = new Date(items.end_date) < new Date();
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
   const fetchPoll = async (pollId) => {
     try {
       const response = await axios.get(
@@ -136,7 +124,7 @@ export default function VotingCard({ items, index, onClick }) {
     >
       <CardContent>
         <Box>
-          <Box className="d-flex jc-bw">
+          <Box className="d-flex">
             <Grid item xs={12} md={8} lg={8}>
               {items.title && (
                 <Typography
@@ -205,7 +193,7 @@ export default function VotingCard({ items, index, onClick }) {
             </Grid>
           </Box>
           <Box className="d-flex h6-title mt-10" style={{ color: "#484848" }}>
-            <Box className="d-flex jc-bw alignItems-center">
+            <Box className="d-flex alignItems-center">
               <TodayOutlinedIcon className="fs-12 pr-5" />
               {moment(items?.start_date).format(
                 "dddd, MMMM Do YYYY, h:mm:ss a"
@@ -250,13 +238,6 @@ export default function VotingCard({ items, index, onClick }) {
             )}
           </Box>
         </Box>
-        {/* <Box className="card-img-container" style={{ position: "inherit" }}>
-          <img
-            src={items.image ? items.image : require("assets/default.png")}
-            className="event-card-img"
-            alt="App Icon"
-          />
-        </Box> */}
       </CardContent>
       <Box className="voting-text lg-mt-20">
         <Box>
@@ -356,7 +337,7 @@ export default function VotingCard({ items, index, onClick }) {
                 </Typography>
 
                 <Box className="pr-5">
-                  <span className=" h3-custom-title"> Poll Ended On</span>
+                  <span className=" h3-custom-title">{t("POLL_ENDED_ON")}</span>
                   <TodayOutlinedIcon
                     className="h3-custom-title pl-10 mt-10"
                     style={{ verticalAlign: "middle" }}
@@ -368,13 +349,6 @@ export default function VotingCard({ items, index, onClick }) {
                   </span>
                 </Box>
               </Grid>
-              {/* <Grid item xs={3} md={6} lg={3}>
-                <img
-                  src={require("assets/default.png")}
-                  className="appicon"
-                  alt="App Icon"
-                />
-              </Grid> */}
               <Box style={{ paddingLeft: "18px", width: "100%" }}>
                 <Box sx={{ width: "100%" }}>
                   {pollResult?.map((option, index) => (

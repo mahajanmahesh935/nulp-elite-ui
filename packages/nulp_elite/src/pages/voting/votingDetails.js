@@ -6,22 +6,18 @@ import Container from "@mui/material/Container";
 import FloatingChatIcon from "../../components/FloatingChatIcon";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormControl from "@mui/material/FormControl";
-import FormLabel from "@mui/material/FormLabel";
-import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
-
+import TextField from "@mui/material/TextField";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import LinearProgress from "@mui/material/LinearProgress";
-
-import ToasterCommon from "../ToasterCommon";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import axios from "axios";
 const data = require("./polls-detail.json");
@@ -35,7 +31,6 @@ import {
   FacebookIcon,
   WhatsappIcon,
   LinkedinIcon,
-  TwitterIcon,
 } from "react-share";
 import { styled } from "@mui/material/styles";
 import Dialog from "@mui/material/Dialog";
@@ -44,9 +39,6 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import AddConnections from "pages/connections/AddConnections";
-// import { Button } from "native-base";
-import { maxWidth } from "@shiksha/common-lib";
 import * as util from "../../services/utilService";
 import moment from "moment";
 import Alert from "@mui/material/Alert";
@@ -81,8 +73,10 @@ const VotingDetails = () => {
   const [open, setOpen] = useState(false);
   const [poll, setPoll] = useState(null);
   const [selectedOption, setSelectedOption] = useState("");
+  const [enteredRemark, setEnteredRemark] = useState("");
   const [userVote, setUserVote] = useState([]);
   const [toasterMessage, setToasterMessage] = useState("");
+  const [errormessage, setErrorMessage] = useState("");
   const [toasterOpen, setToasterOpen] = useState(false);
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -95,6 +89,7 @@ const VotingDetails = () => {
   const [startDate, setStartDate] = useState(moment());
   const [endDate, setEndDate] = useState(moment());
   const [updateFlag, setUpdateFlag] = useState(false);
+  const [remark, setRemark] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -124,31 +119,6 @@ const VotingDetails = () => {
   if (pollId && pollId.endsWith("=")) {
     pollId = pollId.slice(0, -1);
   }
-
-  // useEffect(() => {
-  //   // Ensure startDate is parsed as UTC and then converted to local time
-  //   const startDateLocal = moment.utc(startDate).local();
-  //   console.log("startDate:----", startDateLocal);
-  //   // Check if the current time has passed the start date
-  //   if (moment().isAfter(startDateLocal)) {
-  //     if (!updateFlag) {
-  //       setUpdateFlag(true);
-  //       // Send update to the backend
-  //       fetch(`${urlConfig.URLS.POLL.UPDATE}?poll_id=${pollId}`, {
-  //         method: "PUT",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //         },
-  //         credentials: "include",
-  //         body: JSON.stringify({ status: "Live" }),
-  //       })
-  //         .then((response) => response.json())
-  //         .then((data) => console.log("Success:", data))
-  //         .catch((error) => console.error("Error:", error));
-  //     }
-  //   }
-  // }, [currentTime, startDate, pollId, updateFlag]);
-
   useEffect(() => {
     if (pollId) {
       fetchPoll(pollId);
@@ -177,6 +147,7 @@ const VotingDetails = () => {
       );
       setUserVote(response.data.result);
       setSelectedOption(response.data.result[0].poll_result);
+      setEnteredRemark(response?.data?.result[0]?.remark);
     } catch (error) {
       console.error("Error fetching user vote", error);
     }
@@ -186,43 +157,52 @@ const VotingDetails = () => {
   };
 
   const handleVoteSubmit = async () => {
-    const data = {
-      poll_id: pollId,
-      user_id: userId,
-      poll_submitted: true,
-      poll_result: selectedOption,
-    };
+    if (poll.category === "Learnathon" && remark == null) {
+      setErrorMessage("Please Enter the Remark");
+    } else {
+      const data = {
+        poll_id: pollId,
+        user_id: userId,
+        poll_submitted: true,
+        poll_result: selectedOption,
+        ...(remark ? { remark } : {}),
+      };
 
-    try {
-      await axios.post(`${urlConfig.URLS.POLL.USER_CREATE}`, data);
-      setToasterMessage(
-        "Vote submitted successfully, You can update your vote within next 15 minutes"
-      );
-      setToasterOpen(true);
-      fetchUserVote(pollId);
-    } catch (error) {
-      console.error("Error submitting vote", error);
+      try {
+        await axios.post(`${urlConfig.URLS.POLL.USER_CREATE}`, data);
+        setToasterMessage(
+          "Vote submitted successfully, You can update your vote within next 15 minutes"
+        );
+        setToasterOpen(true);
+        fetchUserVote(pollId);
+      } catch (error) {
+        console.error("Error submitting vote", error);
+      }
     }
   };
 
   const handleVoteUpdate = async () => {
-    const data = {
-      poll_id: pollId,
-      user_id: userId,
-      poll_submitted: true,
-      poll_result: selectedOption,
-    };
+    if (poll.category === "Learnathon" && remark == "") {
+      setErrorMessage("Please Enter the Remark");
+    } else {
+      const data = {
+        poll_id: pollId,
+        user_id: userId,
+        poll_submitted: true,
+        poll_result: selectedOption,
+        ...(remark ? { remark } : {}),
+      };
 
-    try {
-      await axios.put(`${urlConfig.URLS.POLL.USER_UPDATE}`, data);
-      setToasterMessage("Vote updated successfully");
-      setToasterOpen(true);
-      fetchUserVote(pollId);
-    } catch (error) {
-      console.error("Error updating vote", error);
+      try {
+        await axios.put(`${urlConfig.URLS.POLL.USER_UPDATE}`, data);
+        setToasterMessage("Vote updated successfully");
+        setToasterOpen(true);
+        fetchUserVote(pollId);
+      } catch (error) {
+        console.error("Error updating vote", error);
+      }
     }
   };
-
   const handleClose = () => {
     setOpen(false);
   };
@@ -253,10 +233,15 @@ const VotingDetails = () => {
     window.open(url, "_blank");
   };
 
+  const handleRemarkChange = (event) => {
+    setRemark(event.target.value);
+  };
+
   return (
     <div>
       <Header />
       {toasterMessage && <Toast response={toasterMessage} type="success" />}
+      {errormessage && <Toast response={errormessage} type="error" />}
       {poll && (
         <Container maxWidth="xl" role="main" className=" xs-pb-20 mt-12">
           <Breadcrumbs
@@ -281,48 +266,20 @@ const VotingDetails = () => {
               {poll.title}
             </Link>
           </Breadcrumbs>
+          <Box>
+                <Button
+                  type="button"
+                  className="custom-btn-primary ml-20"
+                  onClick={handleGoBack}
+                >
+                  {t("BACK")}
+                </Button>
+              </Box>
           <Grid
             container
             spacing={2}
             className="bg-whitee custom-event-container mb-20 xs-container"
           >
-            {/* <Grid item xs={3} md={6} lg={2} className="lg-pl-5 xs-pl-0"> */}
-            {/* <img
-                src={require("assets/default.png")}
-                className="eventCardImg"
-                alt="App Icon"
-              /> */}
-            {/* <Box>
-              <FormControl>
-                <RadioGroup
-                  aria-labelledby="demo-radio-buttons-group-label"
-                  defaultValue="female"
-                  name="radio-buttons-group"
-                >
-                  <FormControlLabel
-                    value="female"
-                    control={<Radio />}
-                    label="Yes"
-                  />
-                  <FormControlLabel
-                    value="male"
-                    control={<Radio />}
-                    label="No"
-                  />
-                  <FormControlLabel
-                    value="other"
-                    control={<Radio />}
-                    label="Maybe"
-                  />
-                </RadioGroup>
-              </FormControl>
-              <Box>
-                <Button type="button" className="custom-btn-primary">
-                  {t("SUBMIT_VOTE")}
-                </Button>
-              </Box>
-            </Box> */}
-            {/* </Grid> */}
             {(userVote && userVote?.length > 0 && timeDifference > 15) ||
             isVotingEnded ? (
               <Grid item xs={12} md={6} lg={8}>
@@ -335,13 +292,13 @@ const VotingDetails = () => {
 
                 <Box className="pr-5">
                   {isVotingEnded ? (
-                    <span className=" h3-custom-title"> Poll Ended On</span>
+                    <span className="h3-custom-title">{t("POLL_ENDED_ON")}</span>
                   ) : (
-                    <span className=" h3-custom-title"> Live until</span>
+                    <span className="h3-custom-title">{("LIVE_UNTIL")}</span>
                   )}
                   <TodayOutlinedIcon
                     className="h3-custom-title pl-10 pt-10"
-                    style={{ verticalAlign: 'sub',marginRight: '10px'}}
+                    style={{ verticalAlign: "sub", marginRight: "10px" }}
                   />
                   <span className="h3-custom-title ">
                     {moment(poll.end_date).format(
@@ -349,7 +306,7 @@ const VotingDetails = () => {
                     )}
                   </span>
                 </Box>
-                {userVote && userVote?.length > 0 && ( 
+                {userVote && userVote?.length > 0 && (
                   <Box className="pr-5 my-20">
                     <span className=" h3-custom-title"> Your Vote</span>
                     <VerifiedIcon
@@ -362,11 +319,10 @@ const VotingDetails = () => {
                       }}
                     />
                     <span className="h3-custom-title ">
-                      {userVote[0]?.poll_result} 
-                      
+                      {userVote[0]?.poll_result}
                     </span>
                   </Box>
-                )} 
+                )}
                 <Box sx={{ width: "100%" }}>
                   {pollResult && (
                     <div>
@@ -392,18 +348,6 @@ const VotingDetails = () => {
                       ))}
                     </div>
                   )}
-                  {/* <Box className="mt-20">
-                    <Button
-                      type="button"
-                      className="custom-btn-primary"
-                      onClick={handleClickOpen}
-                    >
-                      {t("SHARE_RESULTS")}
-                      <ShareOutlinedIcon
-                        style={{ color: "#fff", paddingLeft: "10px" }}
-                      />
-                    </Button>
-                  </Box> */}
                 </Box>
               </Grid>
             ) : (
@@ -415,7 +359,7 @@ const VotingDetails = () => {
                   {poll.title}
                 </Typography>
                 <Box className="pr-5 h3-custom-title">
-                  <span className=" h3-custom-title"> Live until</span>
+                  <span className=" h3-custom-title">{t("LIVE_UNTIL")}</span>
                   <TodayOutlinedIcon
                     className="h3-custom-title pl-10 mb-10 pt-10"
                     style={{
@@ -474,6 +418,7 @@ const VotingDetails = () => {
                       value={selectedOption}
                       onChange={handleOptionChange}
                       name="radio-buttons-group"
+                      sx={{ marginBottom: "24px" }}
                     >
                       {poll?.poll_options?.map((option, index) => (
                         <FormControlLabel
@@ -484,6 +429,23 @@ const VotingDetails = () => {
                         />
                       ))}
                     </RadioGroup>
+                    {poll && poll.category === "Learnathon" && (
+                      <Box>
+                        <TextField
+                          label={
+                            <>
+                              {t("Remark")}{" "}
+                              <span style={{ color: "red" }}>*</span>
+                            </>
+                          }
+                          variant="outlined"
+                          fullWidth
+                          placeholder={t("Enter your remark")}
+                          value={enteredRemark || remark}
+                          onChange={handleRemarkChange}
+                        />
+                      </Box>
+                    )}
                     <Box>
                       {userVote?.length > 0 ? (
                         <Button
@@ -491,6 +453,7 @@ const VotingDetails = () => {
                           className="custom-btn-primary"
                           onClick={handleVoteUpdate}
                           disabled={!selectedOption} // Disable the button if no option is selected
+                          sx={{ marginTop: "24px" }}
                         >
                           {t("UPDATE_VOTE")}
                         </Button>
@@ -500,6 +463,7 @@ const VotingDetails = () => {
                           className="custom-btn-primary"
                           onClick={handleVoteSubmit}
                           disabled={!selectedOption} // Disable the button if no option is selected
+                          sx={{ marginTop: "24px" }}
                         >
                           {t("SUBMIT_VOTE")}
                         </Button>
@@ -542,7 +506,7 @@ const VotingDetails = () => {
                     </Typography>
 
                     <Box className="pr-5">
-                      <span className=" h3-custom-title"> Poll Ended On</span>
+                      <span className=" h3-custom-title">{("POLL_ENDED_ON")}</span>
                       <TodayOutlinedIcon
                         className="h3-custom-title pl-10"
                         style={{
@@ -586,18 +550,6 @@ const VotingDetails = () => {
                           </Grid>
                         </Box>
                       ))}
-                      {/* <Box className="mt-20">
-                          <Button
-                            type="button"
-                            className="custom-btn-primaryy"
-                            onClick={handleClickOpen}
-                          >
-                            {t("SHARE_RESULTS")}{" "}
-                            <ShareOutlinedIcon
-                              style={{ color: "#fff", paddingLeft: "10px" }}
-                            />
-                          </Button>
-                        </Box> */}
                     </Box>
                   </Box>
                 </Grid>
@@ -607,7 +559,7 @@ const VotingDetails = () => {
               <Box className="xs-hide">
                 <FacebookShareButton
                   url={shareUrl}
-                  className="pr-5"
+                  className="pr-3"
                   quote={`Check out this poll: ${poll.title}`}
                   onClick={(event) => {
                     openSocialMediaLink(event, shareUrl);
@@ -619,14 +571,14 @@ const VotingDetails = () => {
                   url={shareUrl}
                   title={`Check out this poll: ${poll.title}`}
                   separator=":: "
-                  className="pr-5"
+                  className="pr-3"
                   onClick={(event) => openSocialMediaLink(event, shareUrl)}
                 >
                   <WhatsappIcon size={32} round />
                 </WhatsappShareButton>
                 <LinkedinShareButton
                   url={shareUrl}
-                  className="pr-5"
+                  className="pr-3"
                   title={poll.title}
                   summary={`Participate in this poll: ${poll.title}`}
                   onClick={(event) => {
@@ -637,7 +589,7 @@ const VotingDetails = () => {
                 </LinkedinShareButton>
                 <TwitterShareButton
                   url={shareUrl}
-                  className="pr-5"
+                  className="pr-3"
                   title={`Check out this poll: ${poll.title}`}
                   onClick={(event) => {
                     openSocialMediaLink(event, shareUrl);
@@ -675,41 +627,33 @@ const VotingDetails = () => {
                     </Box>
                   ))}
                 </Box>
-                {/* <Box className="mt-20">
-    <Button type="button" className="custom-btn-primaryy">
-      {t("SHARE_RESULTS")}{" "}
-      <ShareOutlinedIcon
-        style={{ color: "#fff", paddingLeft: "10px" }}
-      />
-    </Button>
-  </Box> */}
               </Box>
             )}
-
-            <Box style={{ display: "block", width: "100%" }}></Box>
             <Box
               className="h2-title pl-20 mb-20 mt-20"
               style={{ fontWeight: "600" }}
             >
-              {t("About survey")}
+              {t("ABOUT_SURVEY")}
             </Box>
             <Box
               className="event-h2-title  pl-20 mb-20"
               style={{ fontWeight: "400" }}
             >
+              <Box className="mt-20">
               {poll.description}
+              </Box>
             </Box>
             <Box className="lg-hide ml-20">
-              <FacebookShareButton url={shareUrl} className="pr-5">
+              <FacebookShareButton url={shareUrl} className="pr-3">
                 <FacebookIcon size={32} round={true} />
               </FacebookShareButton>
-              <WhatsappShareButton url={shareUrl} className="pr-5">
+              <WhatsappShareButton url={shareUrl} className="pr-3">
                 <WhatsappIcon size={32} round={true} />
               </WhatsappShareButton>
-              <LinkedinShareButton url={shareUrl} className="pr-5">
+              <LinkedinShareButton url={shareUrl} className="pr-3">
                 <LinkedinIcon size={32} round={true} />
               </LinkedinShareButton>
-              <TwitterShareButton url={shareUrl} className="pr-5">
+              <TwitterShareButton url={shareUrl} className="pr-3">
                 <img
                   src={require("../../assets/twitter.png")}
                   alt="Twitter"

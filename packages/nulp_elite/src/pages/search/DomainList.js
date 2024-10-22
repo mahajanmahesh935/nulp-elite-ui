@@ -1,41 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { createTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import { styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import domainWithImage from "../../assets/domainImgForm.json";
-import SearchBox from "components/search";
-import frameworkHardCodedData from "../../assets/framework.json";
 import Header from "../../components/header";
 import * as frameworkService from ".././../services/frameworkService";
-import { generatePath, useNavigate, useLocation, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Footer from "../../components/Footer";
 import { object } from "yup";
 import Alert from "@mui/material/Alert";
-// import { useTranslation } from "react-i18next";
 import appConfig from "../../configs/appConfig.json";
 const urlConfig = require("../../configs/urlConfig.json");
 import ToasterCommon from "../ToasterCommon";
-import Carousel from "react-multi-carousel";
 import DomainCarousel from "components/domainCarousel";
 import NoResult from "pages/content/noResultFound";
 import BoxCard from "../../components/Card";
-import SummarizeOutlinedIcon from "@mui/icons-material/SummarizeOutlined";
 import BookmarkAddedOutlinedIcon from "@mui/icons-material/BookmarkAddedOutlined";
 import VerifiedOutlinedIcon from "@mui/icons-material/VerifiedOutlined";
 const routeConfig = require("../../configs/routeConfig.json");
 import TextField from "@mui/material/TextField";
 import IconButton from "@mui/material/IconButton";
 import SearchIcon from "@mui/icons-material/Search";
-import CircularProgress from "@mui/material/CircularProgress";
-import Skeleton from "@mui/material/Skeleton";
 import SkeletonLoader from "components/skeletonLoader";
 import FloatingChatIcon from "components/FloatingChatIcon";
 import * as util from "../../services/utilService";
+import { Loading } from "@shiksha/common-lib";
+import { Button } from "@mui/material";
+import axios from "axios";
 
 const Item = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
@@ -58,30 +53,8 @@ theme.typography.h3 = {
   },
 };
 
-const responsive = {
-  superLargeDesktop: {
-    breakpoint: { max: 4000, min: 3000 },
-    items: 5,
-  },
-  desktop: {
-    breakpoint: { max: 3000, min: 1024 },
-    items: 8,
-  },
-  tablet: {
-    breakpoint: { max: 1024, min: 464 },
-    items: 2,
-  },
-  mobile: {
-    breakpoint: { max: 464, min: 0 },
-    items: 1,
-  },
-};
-
 const DomainList = ({ globalSearchQuery }) => {
   const { t } = useTranslation();
-  // console.log(data.result.categories.terms.category);
-  // const [search, setSearch] = React.useState(true);
-  // const [searchState, setSearchState] = React.useState(false);
   const [data, setData] = React.useState();
   const [channelData, setChannelData] = React.useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,10 +69,102 @@ const DomainList = ({ globalSearchQuery }) => {
   const [domain, setDomain] = useState();
   const [popularCourses, setPopularCourses] = useState([]);
   const [recentlyAddedCourses, setRecentlyAddedCourses] = useState([]);
-  const [orgId, setOrgId] = useState();
   const [framework, setFramework] = useState();
+  const [roleList, setRoleList] = useState([]);
+  const [orgId, setOrgId] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState(globalSearchQuery || "");
+
+  const [lernUser, setLernUser] = useState([]);
+  const _userId = util.userId();
+  const fetchData = async () => {
+    try {
+      const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.USER.GET_PROFILE}${_userId}`;
+      const response = await fetch(url);
+      const data = await response.json();
+      const rolesData = data.result.response.channel;
+      const roles = data.result.response.roles;
+      const organizationId = roles[0]?.scope[0]?.organisationId;
+      const extractedRoles = roles.map((roleObj) => roleObj.role);
+      setRoleList(extractedRoles);
+      setOrgId(organizationId);
+      setLernUser(rolesData);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  // Fetch data when the component mounts or _userId changes
+  useEffect(() => {
+    if (_userId) {
+      fetchData();
+    }
+  }, [_userId]);
+
+  const checkAccess = async () => {
+    try {
+      const url = `${urlConfig.URLS.CHECK_USER_ACCESS}`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      const userID = data.result.data;
+      const user = userID.find((user) => user.user_id === _userId);
+
+      if (!user) {
+        fetchUserAccess();
+      } else if (user.creator_access === true) {
+        navigate("/webapp/mylernsubmissions");
+      } else if (user.creator_access === false) {
+        fetchUserAccess();
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
+
+  let responsecode;
+  const isCreator = roleList.includes("CONTENT_CREATOR");
+  const fetchUserAccess = async () => {
+    try {
+      const url = `${urlConfig.URLS.PROVIDE_ACCESS}`;
+      const role = isCreator ? roleList : ["CONTENT_CREATOR", ...roleList];
+      const requestPayload = {
+        request: {
+          organisationId: orgId,
+          roles: role,
+          userId: _userId,
+        },
+      };
+
+      if (isCreator) {
+        requestPayload.isCreator = true;
+      }
+
+      const response = await axios.post(url, requestPayload);
+      const data = await response.data;
+      const result = data.result.data.responseCode;
+
+      responsecode = result;
+      setResponseCode(result);
+
+      if (result === "OK") {
+        navigate("webapp/mylernsubmissions");
+        setIsModalOpen(false);
+      } else {
+        setToasterMessage("Something went wrong! Please try again later");
+      }
+    } catch (error) {
+      console.log("error", error);
+    }
+  };
+
+  const handleCheckUser = async () => {
+    if (lernUser === "nulp-learn") {
+      navigate("/webapp/mylernsubmissions");
+    } else {
+      await checkAccess();
+    }
+  };
 
   const showErrorMessage = (msg) => {
     setToasterMessage(msg);
@@ -113,7 +178,6 @@ const DomainList = ({ globalSearchQuery }) => {
     fetchUserData();
     getRecentlyAddedCourses();
     getPopularCourses();
-    // console.log("domainWithImage--",domainWithImage)
   }, []);
 
   // Function to push data to the array
@@ -125,10 +189,6 @@ const DomainList = ({ globalSearchQuery }) => {
     sessionStorage.setItem("previousRoutes", newPath);
     try {
       const uservData = await util.userData();
-      console.log(
-        "-------------",
-        uservData?.data?.result?.response?.framework?.id[0]
-      );
       setOrgId(uservData?.data?.result?.response?.rootOrgId);
       setFramework(uservData?.data?.result?.response?.framework?.id[0]);
     } catch (error) {
@@ -151,10 +211,8 @@ const DomainList = ({ globalSearchQuery }) => {
     try {
       const url = `${urlConfig.URLS.PUBLIC_PREFIX}${urlConfig.URLS.CHANNEL.READ}/${orgId}`;
       const response = await frameworkService.getChannel(url);
-      // console.log("channel---",response.data.result);
       setChannelData(response.data.result);
     } catch (error) {
-      console.log("error---", error);
       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
     } finally {
       setIsLoading(false);
@@ -169,7 +227,6 @@ const DomainList = ({ globalSearchQuery }) => {
       const selectedIndex = categories.findIndex(
         (category) => category.code === "board"
       );
-      console.log("---------", selectedIndex);
 
       response?.data?.result?.framework?.categories[selectedIndex].terms.map(
         (term) => {
@@ -190,10 +247,8 @@ const DomainList = ({ globalSearchQuery }) => {
       );
       setData(itemsArray);
     } catch (error) {
-      console.log("nulp--  error-", error);
       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
     } finally {
-      console.log("nulp finally---");
       setIsLoading(false);
     }
   };
@@ -206,35 +261,12 @@ const DomainList = ({ globalSearchQuery }) => {
       request: {
         filters: {
           se_boards: [null],
-          primaryCategory: [
-            "Collection",
-            "Resource",
-            "Content Playlist",
-            "Course Assessment",
-            "Digital Textbook",
-            "eTextbook",
-            "Explanation Content",
-            "Learning Resource",
-            "Lesson Plan Unit",
-            "Practice Question Set",
-            "Teacher Resource",
-            "Textbook Unit",
-            "LessonPlan",
-            "FocusSpot",
-            "Learning Outcome Definition",
-            "Curiosity Questions",
-            "MarkingSchemeRubric",
-            "ExplanationResource",
-            "ExperientialResource",
-            "Practice Resource",
-            "TVLesson",
-            "Exam Question",
-          ],
+          primaryCategory: ["Good Practices", "Reports", "Manual/SOPs"],
           visibility: ["Default", "Parent"],
         },
         limit: 100,
         sort_by: {
-          lastPublishedOn: "desc",
+          createdOn: "desc",
         },
         fields: [
           "name",
@@ -292,7 +324,6 @@ const DomainList = ({ globalSearchQuery }) => {
       }
 
       const responseData = await response.json();
-      console.log("data", responseData);
       setRecentlyAddedCourses(responseData?.result?.content || []);
     } catch (error) {
       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
@@ -302,14 +333,12 @@ const DomainList = ({ globalSearchQuery }) => {
   };
 
   const loadContents = async (term) => {
-    // console.log(term);
     navigate(`${routeConfig.ROUTES.CONTENTLIST_PAGE.CONTENTLIST}?1`, {
       state: { domain: term.name, domainName: term.name },
     });
   };
 
   const handleSearch = async (domainquery) => {
-    console.log(domainquery);
     navigate(`${routeConfig.ROUTES.CONTENTLIST_PAGE.CONTENTLIST}?1`, {
       state: { domainquery },
     });
@@ -320,7 +349,6 @@ const DomainList = ({ globalSearchQuery }) => {
       state: { domain: query, domainName: domainName },
     });
   };
-  // console.log(frameworkHardCodedData.result.framework.categories[0].terms);
 
   const handleCardClick = (contentId, courseType) => {
     if (courseType === "Course") {
@@ -329,7 +357,7 @@ const DomainList = ({ globalSearchQuery }) => {
         `${routeConfig.ROUTES.JOIN_COURSE_PAGE.JOIN_COURSE}?${contentId}`
       );
     } else {
-      navigate(`${routeConfig.ROUTES.PLAYER_PAGE.PLAYER}?${contentId}`);
+      navigate(`${routeConfig.ROUTES.PLAYER_PAGE.PLAYER}?id=${contentId}`);
     }
   };
 
@@ -346,7 +374,7 @@ const DomainList = ({ globalSearchQuery }) => {
         },
         limit: 100,
         sort_by: {
-          lastPublishedOn: "desc",
+          createdOn: "desc",
         },
         fields: [
           "name",
@@ -401,7 +429,6 @@ const DomainList = ({ globalSearchQuery }) => {
       }
 
       const responseData = await response.json();
-      console.log("data", responseData);
       setPopularCourses(responseData?.result?.content || []);
     } catch (error) {
       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
@@ -418,7 +445,6 @@ const DomainList = ({ globalSearchQuery }) => {
 
   const handleInputChange = (event) => {
     setSearchQuery(event.target.value);
-    console.log("value", event.target.value);
   };
 
   const handleKeyPress = (event) => {
@@ -431,148 +457,207 @@ const DomainList = ({ globalSearchQuery }) => {
     <div>
       <Header />
       {toasterMessage && <ToasterCommon response={toasterMessage} />}
-
-      {/* Search Box */}
-      <Box
-        className="lg-hide d-flex header-bg"
-        style={{ alignItems: "center", paddingLeft: "19px" }}
-      >
-        <TextField
-          placeholder={t("What do you want to learn today?  ")}
-          variant="outlined"
-          size="small"
-          fullWidth
-          className="searchField"
-          value={searchQuery}
-          onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          InputProps={{
-            endAdornment: (
-              <IconButton
-                type="submit"
-                aria-label="search"
-                onClick={onMobileSearch}
-              >
-                <SearchIcon />
-              </IconButton>
-            ),
+      <Box>
+        {/* Search Box */}
+        <Box
+          className="lg-hide d-flex"
+          style={{
+            alignItems: "center",
+            padding: "15px",
+            marginTop: "67px",
+            background: "#fff",
+            border: "2px solid #eee",
+            borderRadius: "10px",
           }}
-        />
-      </Box>
-
-      {isMobile ? (
-        <Container role="main" maxWidth="xxl" className="mt-180">
-          {error && <Alert severity="error">{error}</Alert>}
-          <Box sx={{ paddingTop: "30px" }}>
-            <Box className="text-white h4-title">
-              {t("SELECT_YOUR_PREFERRED_DOMAIN")}:
-            </Box>
-
-            <Grid
-              container
-              spacing={2}
-              style={{ margin: "20px 0", marginBottom: "10px" }}
-            >
-              {data &&
-                data.slice(0, 10).map((term) => (
-                  <Grid
-                    item
-                    xs={6}
-                    md={6}
-                    lg={2}
-                    style={{ marginBottom: "10px" }}
-                  >
-                    <Box
-                      onClick={() => loadContents(term)}
-                      style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                      }}
-                      className="domainlist-bx"
-                    >
-                      <Box>
-                        <img
-                          className="domainHover"
-                          src={require(`../../assets/domainImgs${term.image}`)}
-                          // style={{ transform: "translate(2px, 5px)" }}
-                        />
-                      </Box>
-                      <h5
-                        className=" cursor-pointer domainText"
-                        // style={{
-                        //   fontSize: "14px",
-                        //   fontWeight: "500",
-                        //   paddingLeft: "10px",
-                        //   margin: "0",
-                        //   width: "86px",
-                        //   wordWrap: "break-word",
-                        // }}
-                      >
-                        {term.name}
-                      </h5>
-                    </Box>
-                  </Grid>
-                ))}
-            </Grid>
-          </Box>
-        </Container>
-      ) : domain ? (
-        <DomainCarousel onSelectDomain={handleDomainFilter} domains={domain} />
-      ) : (
-        <SkeletonLoader />
-        // <NoResult />
-      )}
-
-      <Container
-        maxWidth="xl"
-        className=" allContent allContentList domain-list mt-180"
-        role="main"
-      >
-        {error && <Alert severity="error">{error}</Alert>}
-
-        <Box textAlign="center">
-          <p
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
+        >
+          <TextField
+            placeholder={t("WHAT_DO_YOU_WANT_TO_LEARN_TODAY")}
+            variant="outlined"
+            size="small"
+            fullWidth
+            className="searchField"
+            value={searchQuery}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+            InputProps={{
+              endAdornment: (
+                <IconButton
+                  type="submit"
+                  aria-label="search"
+                  onClick={onMobileSearch}
+                >
+                  <SearchIcon />
+                </IconButton>
+              ),
             }}
-          >
-            <Box>
-              <VerifiedOutlinedIcon
-                className="text-grey"
-                style={{ verticalAlign: "top" }}
-              />{" "}
-              <Box
-                className="h3-title"
-                style={{
-                  display: "inline-block",
-                }}
+          />
+        </Box>
+
+        {isMobile ? (
+          <Container role="main" maxWidth="xxl" className="mt-180">
+            {error && <Alert severity="error">{error}</Alert>}
+            <Box sx={{ paddingTop: "30px" }}>
+              <Box className="text-white h4-title">
+                {t("SELECT_YOUR_PREFERRED_DOMAIN")}:
+              </Box>
+
+              <Grid
+                container
+                spacing={2}
+                style={{ margin: "20px 0", marginBottom: "10px" }}
               >
-                {"Latest Courses"}{" "}
-              </Box>{" "}
+                {isLoading ? (
+                  <Loading
+                    style={{ margin: "20px 50px", marginBottom: "10px" }}
+                    message={t("LOADING")}
+                  />
+                ) : (
+                  data &&
+                  data.slice(0, 10).map((term) => (
+                    <Grid
+                      item
+                      xs={6}
+                      md={6}
+                      lg={2}
+                      style={{ marginBottom: "10px" }}
+                    >
+                      <Box
+                        onClick={() => loadContents(term)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "row",
+                          alignItems: "center",
+                        }}
+                        className="domainlist-bx"
+                      >
+                        <Box>
+                          <img
+                            className="domainHover"
+                            src={require(`../../assets/domainImgs${term.image}`)}
+                          />
+                        </Box>
+                        <h5 className=" cursor-pointer domainText">
+                          {term.name}
+                        </h5>
+                      </Box>
+                    </Grid>
+                  ))
+                )}
+              </Grid>
             </Box>
-          </p>
-          {isMobile ? (
-            <Box style={{ paddingTop: "0" }}>
-              {isLoading ? (
-                <p>{t("LOADING")}</p>
-              ) : error ? (
-                <Alert severity="error">{error}</Alert>
-              ) : popularCourses.length > 0 ? (
-                <div>
+          </Container>
+        ) : domain ? (
+          <DomainCarousel
+            onSelectDomain={handleDomainFilter}
+            domains={domain}
+          />
+        ) : (
+          <SkeletonLoader />
+          // <NoResult />
+        )}
+
+        <Container
+          maxWidth="xl"
+          className=" allContent allContentList domain-list mt-180"
+          role="main"
+        >
+          {error && <Alert severity="error">{error}</Alert>}
+
+          <Box className="lern-box">
+            <Box>
+              <Grid container>
+                <Grid item xs={12} md={12} lg={12}>
+                  <Box className="h1-title">{t("LERN_title")}</Box>
+                </Grid>
+                <Grid item xs={12} md={10} lg={10}>
+                  <Box className="mt-20">{t("LERN_MESSAGE_LINE_TWO")}</Box>
+                </Grid>
+                <Grid item xs={12} md={2} lg={2}>
+                  <Box className="mt-20">
+                    {lernUser === "nulp-learn" ? (
+                      <Button className="viewAll" onClick={handleCheckUser}>
+                        {t("PARTICIPATE_NOW")}
+                      </Button>
+                    ) : (
+                      <Button className="viewAll" onClick={handleCheckUser}>
+                        {t("PARTICIPATE_NOW")}
+                      </Button>
+                    )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={12} lg={12}>
+                  {toasterMessage && (
+                    <Box>
+                      <ToasterCommon response={toasterMessage} />
+                    </Box>
+                  )}
+                </Grid>
+              </Grid>
+            </Box>
+          </Box>
+
+          <Box textAlign="center">
+            <p
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Box>
+                <VerifiedOutlinedIcon
+                  className="text-grey"
+                  style={{ verticalAlign: "top" }}
+                />{" "}
+                <Box
+                  className="h3-title"
+                  style={{
+                    display: "inline-block",
+                  }}
+                >
+                  {t("POPULAR_COURSES")}{" "}
+                </Box>{" "}
+              </Box>
+            </p>
+            {isMobile ? (
+              <Box style={{ paddingTop: "0" }}>
+                {isLoading ? (
+                  <Loading message={t("LOADING")} />
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
+                ) : popularCourses.length > 0 ? (
+                  <div>
+                    <Box className="custom-card">
+                      {popularCourses.slice(0, 10).map((items, index) => (
+                        <Box className="custom-card-box" key={items.identifier}>
+                          <BoxCard
+                            items={items}
+                            onClick={() =>
+                              handleCardClick(
+                                items.identifier,
+                                items.contentType
+                              )
+                            }
+                          />
+                        </Box>
+                        // </Grid>
+                      ))}
+                      <div className="blankCard"></div>
+                    </Box>
+                  </div>
+                ) : (
+                  <NoResult />
+                )}
+              </Box>
+            ) : (
+              <Box sx={{ paddingTop: "0" }}>
+                {isLoading ? (
+                  <Loading message={t("LOADING")} />
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
+                ) : popularCourses.length > 0 ? (
                   <Box className="custom-card">
-                    {popularCourses.slice(0, 10).map((items, index) => (
-                      // <Grid
-                      //   item
-                      //   xs={6}
-                      //   sm={isMobile ? 6 : 12} // Show 2 courses per line on mobile view
-                      //   md={6}
-                      //   lg={2}
-                      //   key={items.identifier}
-                      //   style={{ marginBottom: "10px" }}
-                      // >
-                      <Box className="custom-card-box" key={items.identifier}>
+                    {popularCourses.slice(0, 10).map((items) => (
+                      <Box key={items.identifier} className="custom-card-box">
                         <BoxCard
                           items={items}
                           onClick={() =>
@@ -584,151 +669,105 @@ const DomainList = ({ globalSearchQuery }) => {
                     ))}
                     <div className="blankCard"></div>
                   </Box>
-                </div>
-              ) : (
-                <NoResult />
-              )}
-            </Box>
-          ) : (
-            <Box sx={{ paddingTop: "0" }}>
-              {isLoading ? (
-                <p>{t("LOADING")}</p>
-              ) : error ? (
-                <Alert severity="error">{error}</Alert>
-              ) : popularCourses.length > 0 ? (
-                <Box className="custom-card">
-                  {popularCourses.slice(0, 10).map((items) => (
-                    // <Grid
-                    //   item
-                    //   xs={6}
-                    //   md={6}
-                    //   lg={2}
-                    //   key={items.identifier}
-                    //   style={{ marginBottom: "10px" }}
-                    // >
-                    <Box key={items.identifier} className="custom-card-box">
-                      <BoxCard
-                        items={items}
-                        onClick={() =>
-                          handleCardClick(items.identifier, items.contentType)
-                        }
-                      />
+                ) : (
+                  <NoResult />
+                )}
+              </Box>
+            )}
+          </Box>
+        </Container>
+        <Container
+          maxWidth="xl"
+          className="allContent xs-mb-75 domain-list"
+          role="main"
+        >
+          {error && <Alert severity="error">{error}</Alert>}
+
+          <Box textAlign="center">
+            <p
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+              }}
+            >
+              <Box>
+                <BookmarkAddedOutlinedIcon
+                  className="text-grey"
+                  style={{ verticalAlign: "top" }}
+                />{" "}
+                <Box
+                  className="h3-title"
+                  style={{
+                    display: "inline-block",
+                  }}
+                >
+                  {t("RECENTLY_ADDED")}{" "}
+                </Box>{" "}
+              </Box>
+            </p>
+            {isMobile ? (
+              <Box sx={{ paddingTop: "0" }}>
+                {isLoading ? (
+                  <Loading message={t("LOADING")} />
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
+                ) : recentlyAddedCourses.length > 0 ? (
+                  <div>
+                    <Box className="custom-card">
+                      {recentlyAddedCourses.slice(0, 10).map((items, index) => (
+                        <Box className="custom-card-box" key={items.identifier}>
+                          <BoxCard
+                            items={items}
+                            onClick={() =>
+                              handleCardClick(
+                                items.identifier,
+                                items.contentType
+                              )
+                            }
+                          />
+                        </Box>
+                      ))}
+                      <div className="blankCard"></div>
                     </Box>
-                    // </Grid>
-                  ))}
-                  <div className="blankCard"></div>
-                </Box>
-              ) : (
-                <NoResult />
-              )}
-            </Box>
-          )}
-        </Box>
-      </Container>
-
-      <Container
-        maxWidth="xl"
-        className="allContent xs-mb-75 domain-list"
-        role="main"
-      >
-        {error && <Alert severity="error">{error}</Alert>}
-
-        <Box textAlign="center">
-          <p
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-            }}
-          >
-            <Box>
-              <BookmarkAddedOutlinedIcon
-                className="text-grey"
-                style={{ verticalAlign: "top" }}
-              />{" "}
-              <Box
-                className="h3-title"
-                style={{
-                  display: "inline-block",
-                }}
-              >
-                {"Recently Added"}{" "}
-              </Box>{" "}
-            </Box>
-          </p>
-          {isMobile ? (
-            <Box sx={{ paddingTop: "0" }}>
-              {isLoading ? (
-                <p>{t("LOADING")}</p>
-              ) : error ? (
-                <Alert severity="error">{error}</Alert>
-              ) : recentlyAddedCourses.length > 0 ? (
-                <div>
-                  <Box className="custom-card">
-                    {recentlyAddedCourses.slice(0, 10).map((items, index) => (
-                      // <Grid
-                      //   item
-                      //   xs={6}
-                      //   sm={isMobile ? 6 : 12} // Show 2 courses per line on mobile view
-                      //   md={6}
-                      //   lg={2}
-                      //   key={items.identifier}
-                      //   style={{ marginBottom: "10px" }}
-                      // >
-                      <Box className="custom-card-box" key={items.identifier}>
-                        <BoxCard
-                          items={items}
-                          onClick={() =>
-                            handleCardClick(items.identifier, items.contentType)
-                          }
-                        />
-                      </Box>
-                    ))}
-                    <div className="blankCard"></div>
-                  </Box>
-                </div>
-              ) : (
-                <NoResult />
-              )}
-            </Box>
-          ) : (
-            <Box sx={{ paddingTop: "0" }}>
-              {isLoading ? (
-                <p>{t("LOADING")}</p>
-              ) : error ? (
-                <Alert severity="error">{error}</Alert>
-              ) : recentlyAddedCourses.length > 0 ? (
-                <div>
-                  <Box className="custom-card">
-                    {recentlyAddedCourses.slice(0, 10).map((items) => (
-                      // <Grid
-                      //   item
-                      //   xs={6}
-                      //   md={6}
-                      //   lg={2}
-                      //   key={items.identifier}
-                      //   style={{ marginBottom: "10px" }}
-                      // >
-                      <Box className="custom-card-box" key={items.identifier}>
-                        <BoxCard
-                          items={items}
-                          onClick={() =>
-                            handleCardClick(items.identifier, items.contentType)
-                          }
-                        />
-                      </Box>
-                    ))}
-                    <div className="blankCard"></div>
-                  </Box>
-                </div>
-              ) : (
-                <NoResult />
-              )}
-            </Box>
-          )}
-        </Box>
-      </Container>
-      <FloatingChatIcon />
-
+                  </div>
+                ) : (
+                  <NoResult />
+                )}
+              </Box>
+            ) : (
+              <Box sx={{ paddingTop: "0" }}>
+                {isLoading ? (
+                  <Loading message={t("LOADING")} />
+                ) : error ? (
+                  <Alert severity="error">{error}</Alert>
+                ) : recentlyAddedCourses.length > 0 ? (
+                  <div>
+                    <Box className="custom-card">
+                      {recentlyAddedCourses.slice(0, 10).map((items) => (
+                        <Box className="custom-card-box" key={items.identifier}>
+                          <BoxCard
+                            items={items}
+                            onClick={() =>
+                              handleCardClick(
+                                items.identifier,
+                                items.contentType
+                              )
+                            }
+                          />
+                        </Box>
+                      ))}
+                      <div className="blankCard"></div>
+                    </Box>
+                  </div>
+                ) : (
+                  <NoResult />
+                )}
+              </Box>
+            )}
+          </Box>
+        </Container>
+        <FloatingChatIcon />
+      </Box>
       <Footer />
     </div>
   );

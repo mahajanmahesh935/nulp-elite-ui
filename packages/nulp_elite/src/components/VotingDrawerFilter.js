@@ -124,14 +124,14 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
             label="Search poll"
           />
         </FormControl>
-        <Box className="filter-text mt-15">Select Date Range</Box>
+        <Box className="filter-text mt-15">{t("SELECT_DATE_RANGE")}</Box>
         <Box className="mt-9 dateRange">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <Box className="mb-10">
               <DatePicker
                 label={
                   <span>
-                    Select Date From<span className="red"> *</span>
+                    {t("SELECT_DATE_FROM")}<span className="red"> *</span>
                   </span>
                 }
                 value={selectedStartDate}
@@ -141,7 +141,7 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
             <DatePicker
               label={
                 <span>
-                  Select Date To<span className="red"> *</span>
+                  {t("SELECT_DATE_TO")}<span className="red"> *</span>
                 </span>
               }
               value={selectedEndDate}
@@ -151,7 +151,7 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
         </Box>
         <Box>
           <FormControl>
-            <Box className="filter-text mt-15">Poll Status</Box>
+            <Box className="filter-text mt-15">{t("POLL_STATUS")}</Box>
             <RadioGroup
               row
               aria-labelledby="demo-row-radio-buttons-group-label"
@@ -217,18 +217,18 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
       ) : (
         <Box className="header-bg-blue p-15 filter-bx xs-hide">
           <Box style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px' }}>
-            <Box className="filter-title">Filter By:</Box>
+            <Box className="filter-title">{t("FILTER_BY")}</Box>
             <Button
               type="button"
               className="viewAll mb-20"
               onClick={handleClearAll}
             >
-              Clear all
+               {t("CLEAR_ALL")}
             </Button>
           </Box>
           <FormControl>
             <InputLabel htmlFor="outlined-adornment-search">
-              Search for a Poll
+            {t("SEARCH_FOR_A_POLL")} 
             </InputLabel>
             <OutlinedInput
               id="outlined-adornment-search"
@@ -245,14 +245,14 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
               label="Search poll"
             />
           </FormControl>
-          <Box className="filter-text mt-15">Select Date Range</Box>
+          <Box className="filter-text mt-15">{t("SELECT_DATE_RANGE")}</Box>
           <Box className="mt-9 dateRange">
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <Box className="mb-10">
                 <DatePicker
                   label={
                     <span>
-                      Select Date From<span className="red"> *</span>
+                      {t("SELECT_DATE_FROM")}<span className="red"> *</span>
                     </span>
                   }
                   value={selectedStartDate}
@@ -262,7 +262,7 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
               <DatePicker
                 label={
                   <span>
-                    Select Date To<span className="red"> *</span>
+                    {t("SELECT_DATE_TO")}<span className="red"> *</span>
                   </span>
                 }
                 value={selectedEndDate}
@@ -272,7 +272,7 @@ const VotingDrawerFilter = ({ onFilterChange }) => {
           </Box>
           <Box>
             <FormControl>
-              <Box className="filter-text mt-15">Poll Status</Box>
+              <Box className="filter-text mt-15">{t("POLL_STATUS")}</Box>
               <RadioGroup
                 row
                 aria-labelledby="demo-row-radio-buttons-group-label"

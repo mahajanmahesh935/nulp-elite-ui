@@ -6,13 +6,12 @@ import Container from "@mui/material/Container";
 import FloatingChatIcon from "../../components/FloatingChatIcon";
 import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import { getAllContents } from "services/contentService";
 import TodayOutlinedIcon from "@mui/icons-material/TodayOutlined";
 import AccessAlarmsOutlinedIcon from "@mui/icons-material/AccessAlarmsOutlined";
-import ArrowForwardIosOutlinedIcon from "@mui/icons-material/ArrowForwardIosOutlined";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import AdjustOutlinedIcon from "@mui/icons-material/AdjustOutlined";
@@ -111,6 +110,7 @@ const EventDetails = () => {
   const [open, setOpen] = React.useState(false);
   const [recording, setRecording] = useState();
   const [isAllreadyFilledRegistation,setIsAlreadyFilledRegistration] = useState(true)
+  const [isExpired , setIsExpired] = useState(false)
   const handleClickOpen = () => {
     setOpen(true);
   };
@@ -208,10 +208,11 @@ const EventDetails = () => {
           throw new Error(t("FAILED_TO_FETCH_DATA"));
         }
         const data = await response.json();
-        console.log("event data---", data);
+       
         setEventVisibility(data.result.event.eventVisibility);
         setDetailDate(data.result.event);
         getUserData(data.result.event.owner, "creator");
+        fetchBatchData(data.result.event);
         handleEnrollUnenrollBtn(
           data.result.event.registrationStartDate,
           data.result.event.registrationEndDate
@@ -222,6 +223,10 @@ const EventDetails = () => {
           data.result.event.endDate,
           data.result.event.endTime
         );
+
+    const isExpired = checkIfExpired(data.result.event.registrationEndDate,data.result.event.endTime);
+    setIsExpired(isExpired);
+
       } catch (error) {
         console.error("Error fetching course data:", error);
         showErrorMessage(t("FAILED_TO_FETCH_DATA"));
@@ -229,8 +234,53 @@ const EventDetails = () => {
     };
 
     fetchData();
-    fetchBatchData();
+    // fetchBatchData();
   }, [eventId]);
+
+const checkIfExpired = (registrationEndDate, endTime) => {
+  const regEndDateTime = new Date(registrationEndDate);
+  const regEndDate = new Date(registrationEndDate);
+  regEndDate.setHours(0, 0, 0, 0); 
+
+  const currentDateTime = new Date();
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0); 
+
+  console.log(regEndDate.toDateString(), "regEndDate");
+  console.log(currentDate.toDateString(), "currentDate");
+
+  if (currentDate > regEndDate) {
+    return true; 
+  }
+
+  if (currentDateTime.toDateString() === regEndDateTime.toDateString()) {
+     if (formatTimeWithTimezone(currentDateTime) > endTime) {
+      return true;
+    }
+
+    console.log(regEndDate, "endDateTime with time");
+
+  }
+
+  return false; 
+};
+
+const formatTimeWithTimezone = (date) => {
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  const timezoneOffset = date.getTimezoneOffset(); // in minutes
+  const absOffset = Math.abs(timezoneOffset);
+  const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+  const offsetMinutes = String(absOffset % 60).padStart(2, "0");
+  const sign = timezoneOffset <= 0 ? "+" : "-"; // If negative, it's ahead of UTC, so use "+"
+
+  return `${hours}:${minutes}:${seconds}${sign}${offsetHours}:${offsetMinutes}`;
+};
+
+
+
 
   useEffect(() => {
     getUserData(_userId, "loggedIn");
@@ -239,8 +289,8 @@ const EventDetails = () => {
     // checkEnrolledCourse();
   }, [_userId, eventId]);
 
-  const fetchBatchData = async () => {
-    let enrollmentType = eventVisibility === "public" ? "open" : "invite-only";
+  const fetchBatchData = async (data) => {
+    let enrollmentType = data.eventVisibility === "Public" ? "open" : "invite-only";
 
     try {
       const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.BATCH.GET_BATCHS}`;
@@ -298,14 +348,12 @@ const EventDetails = () => {
   const response = await getAllContents(url, data, headers);
   
   const userRegistrationData = response.data.result.userRegistration;
-  console.log("My data ---", userRegistrationData);
 
   setUserCourseData(userRegistrationData);
 
   if (userRegistrationData.length > 0) {
     userRegistrationData.forEach((event) => {
       if (event.event_id === eventId) {
-        console.log("Check enrollment list API 1-----", event);
         
         setIsEnrolled(true);
         
@@ -317,38 +365,12 @@ const EventDetails = () => {
   }
 } 
  catch (error) {
-      console.log("m data error---", error);
       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
     } finally {
       setIsLoading(false);
     }
   };
-  // const checkEnrolledCourse = async () => {
-  //   try {
-  //     const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.COURSE.GET_ENROLLED_COURSES}/${_userId}?contentType=Event`;
-  //     const response = await fetch(url);
-  //     if (!response.ok) {
-  //       showErrorMessage(t("FAILED_TO_FETCH_DATA"));
-  //       throw new Error(t("FAILED_TO_FETCH_DATA"));
-  //     }
-  //     const data = await response.json();
-  //     console.log("enrollment data ---", data.result.courses);
-  //     setUserCourseData(data.result.courses);
-  //     if (data.result.courses.length > 0) {
-  //       data.result.courses.map((event) => {
-  //         console.log("check enrollment list API 1-----", event);
-  //         if (event.identifier === eventId) {
-  //           alert("list match");
-  //           setIsEnrolled(true);
-  //         }
-  //       });
-  //     }
-  //     console.log("check enrollment list API 2-----", isEnrolled);
-  //   } catch (error) {
-  //     console.error("Error while fetching courses:", error);
-  //     showErrorMessage(t("FAILED_TO_FETCH_DATA"));
-  //   }
-  // };
+
   const handleGoBack = () => {
     navigate(-1); // Navigate back in history
   };
@@ -405,12 +427,10 @@ const EventDetails = () => {
       const response = await axios.post(url, requestBody);
       if (response.status === 200) {
         setIsEnrolled(true);
-        console.log("check enrol API-----", isEnrolled);
 
         setShowEnrollmentSnackbar(true);
         registerEvent(formData, detailData);
       } else {
-        console.log("err-----", response);
       }
     } catch (error) {
       console.error("Error enrolling in the course:", error);
@@ -473,24 +493,17 @@ const EventDetails = () => {
     const strippedTodayDate = stripTime(todayDate);
     const strippedEnrollmentStartDate = stripTime(new Date(enrollmentStart));
     const strippedEnrollmentEndDate = stripTime(new Date(enrollmentEnd));
-    console.log("todayDate----", strippedTodayDate);
-    console.log("enrollmentStart----", strippedEnrollmentStartDate);
-    console.log("enrollmentEnd----", strippedEnrollmentEndDate);
     if (
       strippedEnrollmentStartDate <= strippedTodayDate &&
       strippedEnrollmentEndDate >= strippedTodayDate
     ) {
-      console.log("can Enroll");
       setCanEnroll(true);
     } else {
-      console.log("cannot Enroll");
       setCanEnroll(false);
       if (strippedEnrollmentStartDate > strippedTodayDate) {
-        console.log("Registration not started");
         setIsRegStart(false);
       }
       if (strippedEnrollmentEndDate < strippedTodayDate) {
-        console.log("Registration ended");
         setRegEnd(true);
       }
     }
@@ -508,9 +521,6 @@ const EventDetails = () => {
     const startDateTime = combineDateTime(startDate, startTime);
     const endDateTime = combineDateTime(endDate, endTime);
 
-    console.log("todayDate----", todayDate);
-    console.log("startDateTime----", startDateTime);
-    console.log("endDateTime----", endDateTime);
 
     // Check if the current date and time is within the event period
     // if (startDateTime <= todayDate && endDateTime >= todayDate) {
@@ -526,17 +536,14 @@ const EventDetails = () => {
     const todayDateNew = new Date().getTime();
 
     const tenMinutesBeforeStart = startDateTimeNew - 10 * 60 * 1000;
-    console.log("tenMinutesBeforeStart-----", tenMinutesBeforeStart);
-    console.log("todayDateNew-----", todayDateNew);
+  
 
     if (
       todayDateNew >= tenMinutesBeforeStart &&
       todayDateNew <= endDateTimeNew
     ) {
-      console.log("can Join");
       setCanJoin(true);
     } else {
-      console.log("can not Join");
       setCanJoin(false);
     }
 
@@ -549,7 +556,6 @@ const EventDetails = () => {
 
   const attendWebinar = async () => {
     const url = detailData.onlineProviderData.meetingLink; // Replace with your URL
-    console.log("attend----", url, "  --   ", detailData);
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -593,7 +599,6 @@ const EventDetails = () => {
     try {
       const response = await axios.post(url, RequestBody);
       // Handle the response if needed
-      console.log("%%%%%%%%%%", response);
     } catch (error) {
       // Handle the error if needed
     }
@@ -603,6 +608,7 @@ const EventDetails = () => {
     const url = `${urlConfig.URLS.CUSTOM_EVENT.UPDATE_REGISTER}?event_id=${detailData.identifier}&user_id=${_userId}`;
 
     const RequestBody = {
+      name: formData?.name,
       email: formData?.email,
       designation: formData?.designation,
       organisation: formData?.organisation,
@@ -612,12 +618,19 @@ const EventDetails = () => {
     };
 
     try {
-      await axios.put(url, RequestBody);
-      console.log("update tegister successfull");
-    } catch (error) {
-      console.error("Error updating vote", error);
+      const response = await axios.put(url, RequestBody);
+    
+    if (response?.data?.responseCode === "OK") {
+
+      setIsAlreadyFilledRegistration(true);
+    } else {
+      console.error("Failed to update registration", response.data);
     }
-  };
+  } catch (error) {
+    console.error("Error updating registration", error);
+  }
+};
+
   const unEnroll = async (formData) => {
     try {
       const url = `${urlConfig.URLS.LEARNER_PREFIX}${urlConfig.URLS.COURSE.UNENROLL_USER_COURSE}`;
@@ -632,7 +645,6 @@ const EventDetails = () => {
       if (response.status === 200) {
         setIsEnrolled(false);
         setIsAlreadyFilledRegistration(true)
-        console.log("check unenrol API-----", isEnrolled);
 
         try {
           const response = await axios.delete(
@@ -653,9 +665,8 @@ const EventDetails = () => {
         }
 
         setUnShowEnrollmentSnackbar(true);
-        registerEvent(formData, detailData);
+        // registerEvent(formData, detailData);
       } else {
-        console.log("err-----", response);
       }
     } catch (error) {
       console.error("Error enrolling in the course:", error);
@@ -665,11 +676,9 @@ const EventDetails = () => {
 
   const getEventRecording = async () => {
     try {
-      const url = "/custom_event/fetch_recordings?event_id=" + eventId;
+      const url= `${urlConfig.URLS.CUSTOM_EVENT_FETCH_RECORDINGS}` + eventId;
       const response = await axios.get(url);
-      console.log("---------------Recording Link", response.data);
       setRecording(response.data);
-      console.log("Recording Hardcoded Data", recording);
     } catch (error) {
       console.error("Error fetching recording:", error);
     }
@@ -679,6 +688,7 @@ const EventDetails = () => {
     <div>
       <Header />
       {toasterMessage && <ToasterCommon response={toasterMessage} />}
+      <Box>
       <Snackbar
         open={showEnrollmentSnackbar}
         autoHideDuration={6000}
@@ -746,7 +756,7 @@ const EventDetails = () => {
             spacing={2}
             className="bg-whitee custom-event-container mb-20 custom-container mb-38"
           >
-            <Grid item xs={3} md={6} lg={2}>
+            <Grid item xs={12} md={6} lg={2}>
               <img
                 src={
                   detailData.appIcon
@@ -756,16 +766,11 @@ const EventDetails = () => {
                 className="eventCardImg"
                 alt="App Icon"
               />
-              {/* <img
-                src={require("assets/default.png")}
-                className="eventCardImg"
-                alt="App Icon"
-              /> */}
             </Grid>
-            <Grid item xs={9} md={6} lg={6} className="lg-pl-60 xs-pl-30">
+            <Grid item xs={12} md={6} lg={6} className="lg-pl-60">
               <Typography
                 gutterBottom
-                className="mt-10  h1-title mb-20 xs-pl-15"
+                className="mt-10  h1-title mb-20"
               >
                 {detailData.name}
               </Typography>
@@ -783,11 +788,7 @@ const EventDetails = () => {
                       <Box className="d-flex alignItems-center pl-20">
                         <Box className="event-text-circle"></Box>
                         <Box className="h5-title">
-                          {creatorInfo.firstName
-                            ? creatorInfo.firstName
-                            : "" + " " + creatorInfo.lastName
-                            ? creatorInfo.lastName
-                            : ""}
+                          {detailData.eventOrganisedBy || detailData.eventOrganisedby}
                         </Box>
                       </Box>
                     </Box>
@@ -795,25 +796,25 @@ const EventDetails = () => {
               </Box>
 
               <Box className="d-flex mb-20 h3-custom-title xs-hide">
-                <Box className="d-flex jc-bw alignItems-center pr-5">
+                <Box className="d-flex alignItems-center pr-5">
                   <TodayOutlinedIcon className="h3-custom-title pr-5" />
                   {formatDate(detailData.startDate)}
                 </Box>
-                <Box className="d-flex jc-bw alignItems-center pl-10 pr-5">
+                <Box className="d-flex alignItems-center pl-10 pr-5">
                   <AccessAlarmsOutlinedIcon className="h3-custom-title pr-5" />
                   {formatTimeToIST(detailData.startTime)}
                 </Box>
                 <Box className="mx-10">To</Box>
-                <Box className="d-flex jc-bw alignItems-center pl-5 pr-5">
+                <Box className="d-flex alignItems-center pl-5 pr-5">
                   <TodayOutlinedIcon className="h3-custom-title pr-5" />
                   {formatDate(detailData.endDate)}
                 </Box>
-                <Box className="d-flex jc-bw alignItems-center pl-10 pr-5">
+                <Box className="d-flex alignItems-center pl-10 pr-5">
                   <AccessAlarmsOutlinedIcon className="h3-custom-title pr-5" />
                   {formatTimeToIST(detailData.endTime)}
                 </Box>
               </Box>
-              {eventVisibility &&
+              {!isExpired && eventVisibility &&
                 canEnroll &&
                 !isEnrolled &&
                 eventVisibility == "Public" && (
@@ -858,7 +859,7 @@ const EventDetails = () => {
                     </Alert>
                   </Box>
                 )}
-              {isEnrolled && (
+              {!isExpired && isEnrolled && (
                 <Box className="d-flex xs-hide">
                   <Button
                     type="button"
@@ -882,7 +883,7 @@ const EventDetails = () => {
                   >
                     {t("ATTEND_WEBINAR")}
                   </Button>
-                  {canEnroll && (
+                  {!isExpired && canEnroll && (
                     <Button
                       type="button"
                       onClick={() => {
@@ -910,7 +911,7 @@ const EventDetails = () => {
                   className="h5-title mb-20 xs-hide"
                   style={{ fontWeight: "400" }}
                 >
-                  Registration will be starting on{" "}
+                 {t("REGISTRATION_START_MESSAGE")}
                   {formatDate(detailData.registrationStartDate)}
                 </Box>
               )}
@@ -925,13 +926,13 @@ const EventDetails = () => {
                   </Box>
                 }
               </Box> */}
-              {regEnd && isRecorded && (
+              {isExpired && (
                 <Box
                   className="h5-title mb-20 xs-hide"
                   style={{ fontWeight: "400" }}
                 >
                   <Alert severity="error">
-                    The event has ended. Registration is no longer available
+                   {t("END_REGISTRATION_MESSAGE")}
                   </Alert>
                 </Box>
               )}
@@ -1040,7 +1041,7 @@ const EventDetails = () => {
                   {formatTimeToIST(detailData.endTime)}
                 </Box>
               </Box>
-              {canEnroll && !isEnrolled && (
+              {!isExpired && canEnroll && !isEnrolled && (
                 <div>
                   {" "}
                   <Box
@@ -1073,7 +1074,7 @@ const EventDetails = () => {
                   </Box>
                 </div>
               )}
-              {isEnrolled && (
+              {!isExpired && isEnrolled && (
                 <Box className="d-flex lg-hide">
                   <Button
                     type="button"
@@ -1097,7 +1098,7 @@ const EventDetails = () => {
                   >
                     {t("ATTEND_WEBINAR")}
                   </Button>
-                  {canEnroll && (
+                  {!isExpired && canEnroll && (
                     <Button
                       type="button"
                       onClick={() => {
@@ -1122,17 +1123,17 @@ const EventDetails = () => {
               )}
               {isRegStart === false && (
                 <Box className="h5-title mb-20" style={{ fontWeight: "400" }}>
-                  Registration will be starting on{" "}
+                  {t("REGISTRATION_START_MESSAGE")}
                   {formatDate(detailData.registrationStartDate)}
                 </Box>
               )}
-              {regEnd && isRecorded && (
+              {isExpired && (
                 <Box
                   className="h5-title mb-20 lg-hide"
                   style={{ fontWeight: "400" }}
                 >
                   <Alert severity="error">
-                    The event has ended. Registration is no longer available
+                  {t("END_REGISTRATION_MESSAGE")}
                   </Alert>
                 </Box>
               )}
@@ -1254,11 +1255,12 @@ const EventDetails = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 1000,
             bgcolor: "background.paper",
             border: "2px solid #000",
             boxShadow: 24,
             p: 4,
+            height:"80%",
+            overflowX:"scroll"
           }}
         >
           <Typography variant="h6" component="h2">
@@ -1342,14 +1344,14 @@ const EventDetails = () => {
           />
           <Box sx={{ mt: 2 }} style={{ textAlign: "right" }}>
             <Button
-              className="custom-btn-primary"
+              className="custom-btn-primary xs-mb-10"
               onClick={handleSubmit}
               disabled={!isChecked}
             >
               {t("SUBMIT")}
             </Button>
             <Button
-              className="custom-btn-default"
+              className="custom-btn-default "
               onClick={handleCloseConsentModal}
               sx={{ ml: 2 }}
             >
@@ -1403,7 +1405,7 @@ const EventDetails = () => {
           </Button>
         </DialogActions> */}
       </BootstrapDialog>
-
+      </Box>
       <Footer />
     </div>
   );

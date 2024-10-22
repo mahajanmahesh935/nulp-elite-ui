@@ -15,7 +15,6 @@ import TextField from "@mui/material/TextField";
 import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Search from "components/search";
 import { useLocation, Navigate, useNavigate } from "react-router-dom";
 import * as util from "../../services/utilService";
 import Header from "components/header";
@@ -24,7 +23,6 @@ import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import { useTranslation } from "react-i18next";
 import { useStore } from "configs/zustandStore";
-import { Link as RouterLink } from "react-router-dom";
 import Pagination from "@mui/material/Pagination";
 import Popover from "@mui/material/Popover";
 import { Container } from "@mui/material";
@@ -35,34 +33,15 @@ const designations = require("../../configs/designations.json");
 const urlConfig = require("../../configs/urlConfig.json");
 import Autocomplete from "@mui/material/Autocomplete";
 import ToasterCommon from "../ToasterCommon";
-import ForumOutlinedIcon from "@mui/icons-material/ForumOutlined";
 import Grid from "@mui/material/Grid";
 import Chat from "./chat";
 import Dialog from "@material-ui/core/Dialog";
 import DialogActions from "@material-ui/core/DialogActions";
 import DialogContent from "@material-ui/core/DialogContent";
 import DialogContentText from "@material-ui/core/DialogContentText";
-import DialogTitle from "@material-ui/core/DialogTitle";
 import FloatingChatIcon from "components/FloatingChatIcon";
 const routeConfig = require("../../configs/routeConfig.json");
-// Define modal styles
-const useStyles = makeStyles((theme) => ({
-  modal: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: theme.palette.background.paper,
-    boxShadow: theme.shadows[5],
-    padding: theme.spacing(2, 4, 3),
-    width: "100%",
-    maxWidth: 600, // Adjust as needed
-    borderRadius: 10, // Add rounded corners
-    borderTopLeftRadius: 0, // Ensure modal appears attached to the bottom
-    borderTopRightRadius: 0,
-  },
-}));
+import { Loading } from "@shiksha/common-lib";
 
 const AddConnections = () => {
   const [value, setValue] = React.useState("1");
@@ -83,21 +62,22 @@ const AddConnections = () => {
   const [openModal, setOpenModal] = useState(false);
   const [userSearchData, setUserSearchData] = useState();
   const [searchQuery, setSearchQuery] = useState("");
-  const [textValue, setTextValue] = useState(
-    "Hello! I’d like to connect with you."
-  );
+ 
   const [invitationAcceptedUsers, setInvitationAcceptedUsers] = useState();
   const [invitationNotAcceptedUsers, setInvitationNotAcceptedUsers] =
     useState();
   const [loggedInUserId, setLoggedInUserId] = useState();
   const location = useLocation();
-  const [invitationReceiverByUser, setInvitationReceivedUserByIds] = useState();
+  const [invitationReceiverByUser, setInvitationReceivedUserByIds] = useState([]);
   const [userChat, setUserChat] = useState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [selectedUserName, setSelectedUserName] = useState(false);
   const { t } = useTranslation();
+  const [textValue, setTextValue] = useState(
+    t("HELLO_CONNECT_MESSAGE")
+  );
   const setData = useStore((state) => state.setData);
   const [totalPages, setTotalPages] = useState(1);
   const [userQuerySearchData, setUserQuerySearchData] = useState();
@@ -1071,9 +1051,18 @@ const AddConnections = () => {
     };
     if (userDesignation && userDesignation?.length > 0) {
       filters.userId = userDesignation;
+      const responseUserData = await handleFilterChange(filters);
+      setUserSearchData(responseUserData);
+    }else if(event.length===0){
+      const responseUserData = await handleFilterChange(filters);
+      setUserSearchData(responseUserData);
     }
-    const responseUserData = await handleFilterChange(filters);
-    setUserSearchData(responseUserData);
+      else{
+      filters.userId = "";
+      const responseUserData = await handleFilterChange(filters);
+    }
+    
+    
   };
 
   const handleUserNameFilter = async (event) => {
@@ -1272,7 +1261,6 @@ const AddConnections = () => {
   const handleUnblockUser = async (receiverUserId) => {
     try {
       const url = `${urlConfig.URLS.DIRECT_CONNECT.UNBLOCK}`;
-      console.log("UnBlocking User");
 
       const data = await axios.post(
         url,
@@ -1302,6 +1290,7 @@ const AddConnections = () => {
     <Box>
       <Header />
       {toasterMessage && <ToasterCommon response={toasterMessage} />}
+      <Box>
       <Container maxWidth="xl" role="main" className="pt-0 xs-pb-62 pt-108">
         {error && (
           <Alert severity="error" className="my-10">
@@ -1348,8 +1337,8 @@ const AddConnections = () => {
               ) : (
                 <Button
                   type="button"
-                  className="viewAll xs-mr-10"
                   onClick={handleBackClick}
+                  className="custom-btn-primary mr-5"
                 >
                   {t("BACK")}
                 </Button>
@@ -1367,7 +1356,7 @@ const AddConnections = () => {
                       aria-label="lab API tabs example"
                     >
                       <Tab
-                        label="My Connections"
+                        label={t("MY_CONNECTION")}
                         value="1"
                         style={{ fontSize: "12px", color: "#484848" }}
                         onClick={() => {
@@ -1377,7 +1366,7 @@ const AddConnections = () => {
                         }}
                       />
                       <Tab
-                        label={`Connection Requests (${
+                        label={`${t("CONNECTION_REQUEST")} (${
                           invitationReceiverByUser?.length || 0
                         })`}
                         value="2"
@@ -1388,7 +1377,7 @@ const AddConnections = () => {
                         }}
                       />
                       <Tab
-                        label="Blocked Users"
+                        label={t("BLOCKED_USERS")}
                         value="3"
                         style={{ fontSize: "12px", color: "#484848" }}
                         onClick={() => {
@@ -1406,11 +1395,13 @@ const AddConnections = () => {
                         invitationAcceptedUsers.length === 0 &&
                         invitationNotAcceptedUsers &&
                         invitationNotAcceptedUsers.length === 0 && (
-                          <Box>
+                          <Box marginLeft="150px">
                             <p>{t("NO_USERS_FOUND")}</p>
                           </Box>
                         )}
-
+{isLoading ? (
+                  <Loading message={t("LOADING")} />) :
+                  <>
                       {invitationAcceptedUsers &&
                         invitationAcceptedUsers.map((item) => (
                           <List
@@ -1541,6 +1532,8 @@ const AddConnections = () => {
                             <Divider />
                           </List>
                         ))}
+                        </>
+              }
                       <div>
                         {showChatModal && (
                           <Modal
@@ -1578,7 +1571,15 @@ const AddConnections = () => {
                   </TabPanel>
                   <TabPanel value="2">
                     <Box className="scroll">
-                      {invitationReceiverByUser &&
+                      {invitationReceiverByUser.length ===0 && (
+                        <Box marginTop="26px" marginLeft="163px">
+                          {t("NO_CHAT_REQUEST")}
+                        </Box>
+                         
+                      )}
+                      {isLoading ? (
+                  <Loading message={t("LOADING")} />) :
+                      invitationReceiverByUser &&
                         invitationReceiverByUser.map((item) => (
                           <List
                             key={item.userId}
@@ -1718,8 +1719,19 @@ const AddConnections = () => {
                     </Box>
                   </TabPanel>
                   <TabPanel value="3">
-                    <Box className="scroll">
+                    <Box>
                       {blockedUserList &&
+                        blockedUserList.length === 0 &&(
+                          <Box marginTop="26px" marginLeft="163px">
+                            {t("NO_USERS_FOUND")}
+                          </Box>
+                        )
+                        }
+                    </Box>
+                    <Box className="scroll">
+                    {isLoading ? (
+                  <Loading message={t("LOADING")} />) :
+                      blockedUserList &&
                         blockedUserList.length > 0 &&
                         blockedUserList.map((item) => (
                           <List
@@ -1840,7 +1852,7 @@ const AddConnections = () => {
                     renderInput={(params) => (
                       <TextField
                         {...params}
-                        label="Search for a User"
+                        label={t("SEARCH_FOR_USER")}
                         className="searchUser"
                         variant="outlined"
                       />
@@ -1858,7 +1870,9 @@ const AddConnections = () => {
                       }}
                     >
                       <Typography sx={{ p: 2 }}>
-                        {userQuerySearchData &&
+                      {isLoading ? (
+                  <Loading message={t("LOADING")} />) :
+                        userQuerySearchData &&
                           userQuerySearchData?.length > 0 &&
                           userQuerySearchData?.map((item) => (
                             <List
@@ -1930,44 +1944,47 @@ const AddConnections = () => {
 
                     <Filter
                       options={designationsList}
-                      label="Filter by Designation"
+                      label={t("FILTER_BY_DESIGNATION")}
                       onChange={handleDesignationFilter}
                       // isMulti={false}
                       className="w-30"
                     />
                   </Box>
                   <Box className="scroll">
-                    {userSearchData &&
-                      userSearchData?.map((item) => (
+                    {userSearchData && userSearchData.length > 0 ? (
+                       userSearchData?.map((item) => (
                         <List
-                          key={item.id} // Add key prop to each List element
-                          sx={{ fontSize: "14px" }}
-                          onClick={() => handleUserClick(item)}
+                        key={item.id} // Add key prop to each List element
+                        sx={{ fontSize: "14px" }}
+                        onClick={() => handleUserClick(item)}
                         >
-                          <ListItem>
-                            <ListItemText
-                              className="inviteText"
-                              primary={`${item.firstName}${
-                                item.lastName ? ` ${item.lastName}` : ""
-                              }`}
-                              secondary={`${item.designation}`}
-                            />
-                            {item.id !== loggedInUserId && ( // Conditionally render the link
-                              <Link
-                                className="invite-text"
-                                color="primary"
-                                // onClick={handleOpen}
-                                onClick={() => {
-                                  showMessages(item.userId);
-                                }}
-                              >
-                                {t("INVITE")}
-                              </Link>
-                            )}
-                          </ListItem>
-                          <Divider />
-                        </List>
-                      ))}
+                      <ListItem>
+                    <ListItemText
+                       className="inviteText"
+                       primary={`${item.firstName}${item.lastName ? ` ${item.lastName}` : ""}`}
+                       secondary={`${item.designation}`}
+                     />
+                    {item.id !== loggedInUserId && ( // Conditionally render the link
+                       <Link
+                        className="invite-text"
+                        color="primary"
+                        onClick={() => {
+                        showMessages(item.userId);
+                        }}
+                       >
+                       {t("INVITE")}
+                      </Link>
+                    )}
+                  </ListItem>
+                  <Divider />
+                   </List>
+                  ))
+                  ) : (
+                    <Typography variant="body1" align="center" sx={{ marginTop: 2 }}>
+                      {t("NO_USERS_FOUND")}
+                      </Typography>
+                  )}
+
                   </Box>
                   <Pagination
                     count={totalPages}
@@ -2009,6 +2026,7 @@ const AddConnections = () => {
         </Box> */}
       </Container>
       <FloatingChatIcon />
+      </Box>
       <Footer />
     </Box>
   );
@@ -2025,15 +2043,6 @@ const Backdrop = React.forwardRef((props, ref) => {
 
 Backdrop.propTypes = {
   open: PropTypes.bool,
-};
-
-const blue = {
-  200: "#99CCFF",
-  300: "#66B2FF",
-  400: "#3399FF",
-  500: "#007FFF",
-  600: "#0072E5",
-  700: "#0066CC",
 };
 
 const grey = {
@@ -2057,22 +2066,6 @@ const Modal = styled(BaseModal)`
   align-items: center;
   justify-content: center;
 `;
-
-const StyledBackdrop = styled(Backdrop)`
-  z-index: -1;
-  position: fixed;
-  inset: 0;
-  background-color: rgb(0 0 0 / 0.5);
-  -webkit-tap-highlight-color: transparent;
-`;
-
-const style = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: "80%",
-};
 
 const ModalContent = styled("div")(
   ({ theme }) => css`
@@ -2103,20 +2096,6 @@ const ModalContent = styled("div")(
       font-weight: 400;
       color: ${theme.palette.mode === "dark" ? grey[400] : grey[800]};
       margin-bottom: 4px;
-    }
-  `
-);
-
-const TriggerButton = styled(Button)(
-  ({ theme }) => css`
-    font-weight: 600;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    padding: 8px 16px;
-    border-radius: 8px;
-    transition: all 150ms ease;
-    cursor: pointer;
-
     }
   `
 );

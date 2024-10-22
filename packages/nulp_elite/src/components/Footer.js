@@ -2,15 +2,10 @@ import * as React from "react";
 import Box from "@mui/material/Box";
 import BottomNavigation from "@mui/material/BottomNavigation";
 import BottomNavigationAction from "@mui/material/BottomNavigationAction";
-import SearchSharpIcon from "@mui/icons-material/SearchSharp";
-import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
-import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
-import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
-import Container from "@mui/material/Container";
 import Link from "@mui/material/Link";
 import Grid from "@mui/material/Grid";
 import { useTranslation } from "react-i18next";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import MenuBookOutlinedIcon from "@mui/icons-material/MenuBookOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import TwitterIcon from "@mui/icons-material/Twitter";
@@ -23,14 +18,6 @@ const routeConfig = require("../configs/routeConfig.json");
 import VideocamOutlinedIcon from "@mui/icons-material/VideocamOutlined";
 import Groups2OutlinedIcon from "@mui/icons-material/Groups2Outlined";
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
-
-// const styles = {
-//   BottomNavigation: {
-//     width: '100%',
-//     position: 'fixed',
-//     bottom: 0,
-//   },
-// };
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -156,9 +143,9 @@ export default function Footer() {
             />
             <BottomNavigationAction
               target="_blank"
-              onClick={() => navigate("/my-groups")}
+              onClick={() => navigate("/my-groups?selectedTab=myGroups")}
               className={
-                location.pathname === `/my-groups` ? "navigateActive" : ""
+                location.pathname === `/my-groups?selectedTab=myGroups` ? "navigateActive" : ""
               }
               // onClick={() => navigate(routeConfig.ROUTES.POFILE_PAGE.PROFILE)}
               label={t("DISCUSSIONS")}
@@ -186,9 +173,7 @@ export default function Footer() {
             boxSizing: 'border-box'
           }}
         >
-          {/* <Box>dfgdfgsg */}
-
-          <Grid container spacing={2} className="footer">
+          <Grid container spacing={2}>
             <Grid
               item
               xs={8}
@@ -258,16 +243,16 @@ export default function Footer() {
                 {t("NATIONAL_URBAN_DIGITAL_MISSION")}
               </Link>
               <Box className="social-icons">
-                <Link href="#" underline="none">
+                <Link href="https://www.facebook.com/NIUA.India/" underline="none" target="_blank">
                   <FacebookIcon />
                 </Link>
-                <Link href="#" underline="none">
+                <Link href="https://www.instagram.com/niua_india/" underline="none" target="_blank">
                   <InstagramIcon />
                 </Link>
-                <Link href="#" underline="none">
+                <Link href="https://www.linkedin.com/school/national-institute-of-urban-affairs/" underline="none" target="_blank">
                   <LinkedInIcon />
                 </Link>
-                <Link href="#" underline="none">
+                <Link href="https://x.com/NIUA_India" underline="none" target="_blank">
                   <TwitterIcon />
                 </Link>
               </Box>
@@ -299,7 +284,7 @@ export default function Footer() {
               <br />
               {t("FIRST_FLOOR_CORE")}
               <br />
-              Phone: (+91 11) 24617517, 24617543, 24617595
+              {t("PHONE")}: {t("PHONE_NUMBER")}
             </Grid>
           </Grid>
         </Box>
