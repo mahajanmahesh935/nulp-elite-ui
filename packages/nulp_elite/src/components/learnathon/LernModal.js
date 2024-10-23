@@ -84,7 +84,7 @@ const LernModal = () => {
       const role = isCreator ? roleList : ["CONTENT_CREATOR", ...roleList];
       const requestPayload = {
         request: {
-          organisationId: orgId,
+          organisationId: orgId || "0137506576041902087",
           roles: role,
           userId: _userId,
         },
