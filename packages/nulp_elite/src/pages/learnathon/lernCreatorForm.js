@@ -24,9 +24,12 @@ import Container from "@mui/material/Container";
 import InputLabel from "@mui/material/InputLabel";
 import FormControl from "@mui/material/FormControl";
 import Alert from "@mui/material/Alert";
-
+// import SunbirdFileUploadLib from "@project-sunbird/sunbird-file-upload-library/sunbird-file-upload-library";
+// import * as SunbirdFileUploadLib from "@project-sunbird/sunbird-file-upload-library/sunbird-file-upload-library";
+// import "@project-sunbird/sunbird-file-upload-library/sunbird-file-upload-library";
+// import "@project-sunbird/sunbird-file-upload-library";
 // const [globalSearchQuery, setGlobalSearchQuery] = useState();
-// // location.state?.globalSearchQuery || undefined
+// location.state?.globalSearchQuery || undefined
 // const [searchQuery, setSearchQuery] = useState(globalSearchQuery || "");
 
 const categories = [
@@ -55,7 +58,8 @@ const LernCreatorForm = () => {
   const [userInfo, setUserInfo] = useState();
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
-
+  const uploader = window.SunbirdFileUploadLib;
+  // $scope.uploaderLib = new SunbirdFileUploadLib.FileUploader();
   const [formData, setFormData] = useState({
     user_name: "",
     email: "",
@@ -172,11 +176,12 @@ const LernCreatorForm = () => {
       tempErrors.title_of_submission = "Title of Submission is required";
     if (!formData.description)
       tempErrors.description = "Description is required";
-    if (!formData.content_id) tempErrors.content_id = "File upload is required";
+    // if (!formData.content_id) tempErrors.content_id = "File upload is required";
     if (!formData.consent_checkbox)
       tempErrors.consent_checkbox = "You must accept the terms and conditions";
 
     setErrors(tempErrors);
+    console.log(tempErrors);
     return Object.keys(tempErrors).length === 0;
   };
 
@@ -234,13 +239,14 @@ const LernCreatorForm = () => {
       const result = await response.json();
       console.log("suceesss----", result);
 
-      const uploadBody = {
+      const uploadUrlBody = {
         request: {
           content: {
             fileName: e.target.files[0].name,
           },
         },
       };
+
       try {
         const response = await fetch(
           `${urlConfig.URLS.ICON.UPLOADIMG}/${result.result.identifier}`,
@@ -249,7 +255,7 @@ const LernCreatorForm = () => {
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify(uploadBody),
+            body: JSON.stringify(uploadUrlBody),
           }
         );
 
@@ -259,6 +265,49 @@ const LernCreatorForm = () => {
 
         const uploadResult = await response.json();
         console.log("upload suceesss------", uploadResult);
+        const formData = new FormData();
+        formData.append("file", e.target.files[0]);
+
+        const uploadBody = {
+          request: {
+            content: {
+              file: formData,
+              mimeType: "image/png",
+            },
+          },
+        };
+        try {
+          const response = await fetch(
+            `${urlConfig.URLS.ICON.UPLOAD}/${result.result.identifier}?enctype=multipart/form-data&processData=false&contentType=false&cache=false`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(uploadBody),
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch polls");
+          }
+
+          const uploadResult = await response.json();
+          console.log("upload suceesss------", uploadResult);
+          setFormData({
+            ...formData,
+            icon: uploadResult.result.identifier,
+          });
+          setErrors({ ...errors, icon: "" });
+
+          // setData(result.result.data);
+          // setTotalPages(Math.ceil(result.result.totalCount / 10));
+        } catch (error) {
+          console.log("error---", error);
+          // setError(error.message);
+        } finally {
+          // setIsLoading(false);
+        }
         setFormData({
           ...formData,
           icon: uploadResult.result.identifier,
@@ -324,7 +373,7 @@ const LernCreatorForm = () => {
       };
       try {
         const response = await fetch(
-          `${urlConfig.URLS.ASSET.UPLOAD}/${result.result.identifier}`,
+          `${urlConfig.URLS.ASSET.UPLOADURL}/${result.result.identifier}`,
           {
             method: "POST",
             headers: {
@@ -340,6 +389,21 @@ const LernCreatorForm = () => {
 
         const uploadResult = await response.json();
         console.log("upload suceesss------", uploadResult);
+
+        const url = `${urlConfig.URLS.ASSET.UPLOADURL}/${result.result.identifier}`;
+        const file = e.target.files[0];
+        const csp = "azure"; // Cloud provider (azure, aws, etc.)
+
+        // $scope.uploaderLib.upload({url: url, file:  e.target.files[0], csp:  "azure"})
+
+        uploader
+          .upload(url, file, csp)
+          .then((response) => {
+            console.log("Upload successful:", response);
+          })
+          .catch((error) => {
+            console.error("Upload failed:", error);
+          });
         setFormData({
           ...formData,
           content_id: uploadResult.result.identifier,
@@ -402,6 +466,7 @@ const LernCreatorForm = () => {
     formData.created_by = _userId;
     // Handle form submission (draft or review)
     console.log("Form submitted:", formData);
+    console.log(action);
     if (action === "draft") {
       formData.status = "draft";
       // Add validations
@@ -468,10 +533,14 @@ const LernCreatorForm = () => {
 
       console.log("Saved as draft");
     } else if (action === "review") {
+      console.log("hrtrrrrrr");
+
       formData.status = "review";
       if (!validate()) return;
 
       if (isEdit == false) {
+        console.log("dddd");
+
         try {
           const response = await fetch(`${urlConfig.URLS.LEARNATHON.CREATE}`, {
             method: "POST",
@@ -496,6 +565,8 @@ const LernCreatorForm = () => {
           // setIsLoading(false);
         }
       } else {
+        console.log("ggggg");
+
         try {
           const response = await fetch(
             `${urlConfig.URLS.LEARNATHON.UPDATE}?id=${contentId}`,
@@ -514,6 +585,7 @@ const LernCreatorForm = () => {
 
           const result = await response.json();
           console.log("suceesss");
+          navigate("/webapp/mylernsubmissions");
           // setData(result.result.data);
           // setTotalPages(Math.ceil(result.result.totalCount / 10));
         } catch (error) {
