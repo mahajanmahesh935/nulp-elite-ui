@@ -636,7 +636,7 @@ const DomainList = ({ globalSearchQuery }) => {
           {error && <Alert severity="error">{error}</Alert>}
 
           {(isLearnathonUser || isLearnathonStarted) && (
-
+          <Box className="lern-box">
             <Box>
               <Grid container>
                 <Grid item xs={12}>
